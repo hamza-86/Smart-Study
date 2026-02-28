@@ -1,5 +1,4 @@
 import React from "react";
-import img from "../assets/hero image.webp";
 import { BiInfoCircle } from "react-icons/bi";
 import { HiOutlineGlobeAlt } from "react-icons/hi";
 import ReactMarkdown from "react-markdown";
@@ -10,7 +9,6 @@ import axios from "axios";
 import { endpoints } from "../services/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { isAction } from "@reduxjs/toolkit";
 import { formatDate } from "../utils/formateDate";
 import CourseDetailsCard from "../components/CourseDetailsCard";
 import { BuyCourse } from "../services/studentFeaturesAPI";
@@ -20,16 +18,6 @@ import { motion } from "framer-motion";
 import { textVariant, fadeIn } from "../utils/motion";
 
 const { GET_COURSE_DETAILS } = endpoints;
-
-const markdownContent = `
-
-- Introduction to Python and Python 3
-- Understand the basics: Data types, Loops, Conditional statements, Functions and Modules
-- Learn object oriented programming in Python
-- Learn how to make your own web-scraping tool using Python
-- Know how to Read and Parse JSON and XML files
-
-`;
 
 const CourseDetails = () => {
   const { courseId } = useParams();
@@ -53,9 +41,8 @@ const CourseDetails = () => {
       try {
         //console.log("Sending request with token:", token);
 
-        const response = await axios.post(
-          GET_COURSE_DETAILS,
-          { courseId },
+        const response = await axios.get(
+          GET_COURSE_DETAILS(courseId),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -70,12 +57,11 @@ const CourseDetails = () => {
           throw new Error(response.data.message);
         }
 
-        if (!response.data.data || !response.data.data.courseDetails) {
+        if (!response.data.data || !response.data.data.course) {
           throw new Error("Course details not found");
         }
 
-        //console.log(response.data.data.courseDetails);
-        setCourse(response.data.data.courseDetails);
+        setCourse(response.data.data.course);
         setDuration(response.data.data.totalDuration);
       } catch (error) {
         //console.log("Fetching course error:", error.response || error);
@@ -86,7 +72,7 @@ const CourseDetails = () => {
     };
 
     fetchCourse();
-  }, [courseId]);
+  }, [courseId, token, dispatch]);
 
   const [isActive, setIsActive] = useState(Array(0));
   const handleActive = (id) => {
@@ -94,7 +80,7 @@ const CourseDetails = () => {
     setIsActive(
       !isActive.includes(id)
         ? isActive.concat([id])
-        : isActive.filter((e) => e != id)
+        : isActive.filter((e) => e !== id)
     );
   };
 
@@ -102,7 +88,7 @@ const CourseDetails = () => {
   useEffect(() => {
     let lectures = 0;
     course?.courseContent?.forEach((sec) => {
-      lectures += sec.subSection.length || 0;
+      lectures += sec.subSections?.length || 0;
     });
     setTotalNoOfLectures(lectures);
   }, [course]);
@@ -125,7 +111,7 @@ const CourseDetails = () => {
   return (
     <>
       <div className=" min-h-screen mb-12">
-        <div className={`relative w-full bg-richblack-800`}>
+        <div className="relative w-full bg-richblack-800">
           {/* Hero Section */}
           <div className="mx-auto box-content px-4 lg:w-[1260px] 2xl:relative ">
             <div className="mx-auto grid min-h-[350px] max-w-maxContentTab justify-items-center py-8 my-10 lg:mx-0 lg:justify-items-start lg:py-0 xl:max-w-[810px]">
@@ -163,7 +149,7 @@ const CourseDetails = () => {
                   <p className={`text-richblack-200`}>{course?.description}</p>
                 </motion.p>
                 <div className="text-md text-[#DBDDEA] flex flex-wrap items-center gap-2">
-                  <span>{`${course.studentsEnroled?.length} Students Enrolled`}</span>
+                  <span>{`${course.studentsEnrolled?.length || 0} Students Enrolled`}</span>
                 </div>
                 <div>
                   <p className="text-[#DBDDEA]">{`Created by ${
@@ -189,12 +175,12 @@ const CourseDetails = () => {
                 <button
                   className="cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900"
                   onClick={
-                    user && course?.studentsEnroled?.includes(user?._id)
-                      ? () => navigate("/dashboard/enrolled-courses")
-                      : handleBuyCourse
+                    user && course?.studentsEnrolled?.includes(user?._id)
+                    ? () => navigate("/dashboard/enrolled-courses")
+                    : handleBuyCourse
                   }
                 >
-                  {user && course?.studentsEnroled?.includes(user?._id)
+                  {user && course?.studentsEnrolled?.includes(user?._id)
                     ? "Go To Course"
                     : "Buy Now"}
                 </button>

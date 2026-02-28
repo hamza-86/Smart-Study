@@ -7,14 +7,14 @@ import InstructorSubsection from "./InstructorSubsection";
 import { useState } from "react";
 import CreateSubsectionModel from "./CreateSubsectionModal";
 import { useDispatch } from "react-redux";
-import { setSections } from "../../slices/courseSlice";
+import { updateSection } from "../../slices/courseSlice";
 import { FaPlus } from "react-icons/fa";
 import { editSection } from "../../services/courseAPI";
 
 const InstructorSection = ({
   name,
   sectionId,
-  subsections,
+  subSections,
   onDelete,
   courseId,
   token,
@@ -38,12 +38,10 @@ const InstructorSection = ({
   const submitHandler = async (e) => {
     e.preventDefault();
 
-    const response = await editSection(editedName, sectionId, courseId, token);
+    const response = await editSection(editedName, sectionId, token);
 
-    if (response.status === 200) {
-      //console.log("response section edit :>> ", response);
-
-      dispatch(setSections(response.data.data.courseContent));
+    if (response?.success && response?.data) {
+      dispatch(updateSection(response.data));
     }
 
     closeModalSection();
@@ -93,22 +91,19 @@ const InstructorSection = ({
             </div>
           </div>
           <div className=" w-full h-[1px] bg-richblack-400"></div>
-          {subsections.map((subSection) => (
-            <InstructorSubsection
-              key={subSection._id}
-              subSectionId={subSection._id}
-              title={subSection.title}
-              description={subSection.description}
-              video={subSection.video}
-              sectionId={sectionId}
-              token={token}
-            />
-          ))}
+{subSections?.map((sub) => (
+  <InstructorSubsection
+    key={sub._id}
+    subSection={sub}
+    sectionId={sectionId}
+    token={token}
+  />
+))}
         </div>
       </div>
 
       {/* Modal Component */}
-      <CreateSubsectionModel
+          <CreateSubsectionModel
         isModalOpen={isModalOpen}
         closeModal={closeModal}
         sectionId={sectionId}

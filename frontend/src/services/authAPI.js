@@ -1,17 +1,20 @@
 import axios from "axios";
 import { endpoints } from "./api";
-import toast from "react-hot-toast";
 
 const { LOGOUT_API } = endpoints;
 
-export const logoutUser = async () => {
+export const logoutUser = async (token) => {
   try {
-    const response = await axios.post(LOGOUT_API);
-
-    if (!response.data.success) {
-      throw new Error(response.data.message);
-    }
+    await axios.post(
+      LOGOUT_API,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
   } catch (error) {
-    //console.log("error :>> ", error);
+    console.error("Logout Error:", error.message);
   }
 };

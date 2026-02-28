@@ -21,9 +21,11 @@ const AllCourses = () => {
     if (!token) {
       navigate("/login");
     }
-  }, []);
+  }, [token, navigate]);
 
   useEffect(() => {
+    if (!token) return;
+
     const toastId = toast.loading("Loading...");
     dispatch(setLoading(true));
 
@@ -50,7 +52,7 @@ const AllCourses = () => {
     }
 
     fetchCourses();
-  }, []); // ✅ Now fetches only when token is valid
+  }, [token, dispatch]);
 
   if (loading) {
     return (
@@ -63,20 +65,23 @@ const AllCourses = () => {
   return (
     <>
       <div className="bg-richblack-900 min-h-screen w-[90%] mx-auto flex flex-col items-center px-4 py-8">
-        <div className=" flex flex-col gap-10 pt-24 lg:flex-row flex-wrap ">
-          {/* Rendering Courses */}
-          {courses.map((course, index) => (
-            <CourseCard
-              key={course._id}
-              index={index}
-              title={course.title}
-              courseId={course._id}
-              category={course.category.name}
-              price={course.price}
-              thumbnail={course.thumbnail}
-              instructor={course.instructor.name}
-            />
-          ))}
+        <div className="flex flex-col gap-10 pt-24 lg:flex-row flex-wrap">
+          {courses.length > 0 ? (
+            courses.map((course, index) => (
+              <CourseCard
+                key={course._id}
+                index={index}
+                title={course.title}
+                courseId={course._id}
+                category={course.category?.name || "Uncategorized"}
+                price={course.price}
+                thumbnail={course.thumbnail}
+                instructor={course.instructor?.name || "Unknown Instructor"}
+              />
+            ))
+          ) : (
+            <p className="text-richblack-100 text-lg">No courses available right now.</p>
+          )}
         </div>
       </div>
 

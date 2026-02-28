@@ -26,21 +26,18 @@ function loadScript(src) {
 
 // Buy the Course
 export async function BuyCourse(token, courses, user_details, navigate) {
-  const toastId = toast.loading("Loading...");
+  const toastId = toast.loading("Processing Payment...");
   try {
-    // Loading the script of Razorpay SDK
     const res = await loadScript(
       "https://checkout.razorpay.com/v1/checkout.js"
     );
 
     if (!res) {
-      toast.error(
-        "Razorpay SDK failed to load. Check your Internet Connection."
-      );
+      toast.error("Failed to load Razorpay SDK.");
+      toast.dismiss(toastId);
       return;
     }
 
-    // Initiating the Order in Backend
     const orderResponse = await axios.post(
       COURSE_PAYMENT_API,
       { courses },
@@ -54,43 +51,44 @@ export async function BuyCourse(token, courses, user_details, navigate) {
     if (!orderResponse.data.success) {
       throw new Error(orderResponse.data.message);
     }
-    // console.log(
-    //   "PAYMENT RESPONSE FROM BACKEND............",
-    //   orderResponse.data
-    // );
 
-    // Opening the Razorpay SDK
+    const orderData = orderResponse.data.order;
+
+    if (!orderData) {
+      throw new Error("Invalid payment order response");
+    }
+
     const options = {
       key: process.env.REACT_APP_RAZORPAY_KEY || "",
-      currency: orderResponse.data.data.currency,
-      amount: `${orderResponse.data.data.amount}`,
-      order_id: orderResponse.data.data.id,
-      name: "SmartLearn",
-      description: "Thank you for Purchasing the Course.",
+      currency: orderData.currency,
+      amount: orderData.amount,
+      order_id: orderData.id,
+      name: "Smart Study",
+      description: "Thank you for purchasing the course.",
       image: rzpLogo,
       prefill: {
-        name: user_details.name,
-        email: user_details.email,
+        name: user_details?.name,
+        email: user_details?.email,
       },
       handler: function (response) {
         sendPaymentSuccessEmail(
           response,
-          orderResponse.data.data.amount,
+          orderData.amount,
           token
         );
         verifyPayment({ ...response, courses }, token, navigate);
       },
     };
-    const paymentObject = new window.Razorpay(options);
 
+    const paymentObject = new window.Razorpay(options);
     paymentObject.open();
-    paymentObject.on("payment.failed", function (response) {
-      toast.error("Oops! Payment Failed.");
-      //console.log(response.error);
+
+    paymentObject.on("payment.failed", function () {
+      toast.error("Payment Failed.");
     });
   } catch (error) {
-    //console.log("PAYMENT API ERROR............", error);
-    toast.error("Instructor cannot buy Course");
+    console.error("Payment Error:", error.message);
+    toast.error("Payment Failed.");
   }
   toast.dismiss(toastId);
 }

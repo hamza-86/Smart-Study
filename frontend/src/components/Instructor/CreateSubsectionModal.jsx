@@ -1,13 +1,13 @@
-import React, { useEffect } from "react";
-import { FaPlus } from "react-icons/fa";
-import { useState } from "react";
-import { addSubsection } from "../../services/courseAPI";
+import React, { useEffect, useState } from "react";
+import { MdOutlineCloudUpload } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
 import { updateSection } from "../../slices/courseSlice";
-import { editSubsection } from "../../services/courseAPI";
-import { MdOutlineCloudUpload } from "react-icons/md";
+import {
+  addSubsection,
+  editSubsection,
+} from "../../services/courseAPI";
 
-const CreateSubsectionModel = ({
+const CreateSubsectionModal = ({
   isModalOpen,
   closeModal,
   sectionId,
@@ -16,45 +16,23 @@ const CreateSubsectionModel = ({
   const token = useSelector((state) => state.auth.token);
   const dispatch = useDispatch();
 
-  const [subSectionData, setSubSectionData] = useState({
-    title: "",
-    description: "",
-  });
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [video, setVideo] = useState(null);
 
   useEffect(() => {
     if (existingSubsection) {
-      setSubSectionData({
-        title: existingSubsection.title || "",
-        description: existingSubsection.description || "",
-      });
-
-      setVideo(existingSubsection.video || null);
+      setTitle(existingSubsection.title || "");
+      setDescription(existingSubsection.description || "");
     }
   }, [existingSubsection]);
-
-  const { title, description } = subSectionData;
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setVideo(file);
-    }
-  };
-
-  const onChangeHandler = (e) => {
-    setSubSectionData((prevData) => ({
-      ...prevData,
-      [e.target.name]: e.target.value,
-    }));
-  };
 
   const submitHandler = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("title", subSectionData.title);
-    formData.append("description", subSectionData.description);
+    formData.append("title", title);
+    formData.append("description", description);
     formData.append("sectionId", sectionId);
 
     if (video) {
@@ -64,98 +42,69 @@ const CreateSubsectionModel = ({
     let response;
 
     if (existingSubsection) {
-      formData.append("subSectionId", existingSubsection.subSectionId);
-      response = await editSubsection(formData, token);
+      response = await editSubsection(
+        existingSubsection._id,
+        formData,
+        token
+      );
     } else {
       response = await addSubsection(formData, token);
     }
 
-    if (response?.data.success) {
-      dispatch(updateSection(response?.data?.data));
+    if (response?.success && response?.data) {
+      dispatch(updateSection(response.data));
+      closeModal();
+      setTitle("");
+      setDescription("");
+      setVideo(null);
     }
-
-    closeModal();
-
-    setSubSectionData({
-      title: "",
-      description: "",
-    });
-    setVideo(null);
   };
 
+  if (!isModalOpen) return null;
+
   return (
-    <div>
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className=" p-6 rounded-xl  text-white bg-black w-[90%] border max-w-lg h-[70vh] relative overflow-hidden">
-            <button
-              onClick={closeModal}
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-            >
-              ✖
-            </button>
-            <h2 className="text-xl font-bold mb-2">Editing Lecture</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="p-6 rounded-xl text-white bg-richblack-800 w-[90%] max-w-lg">
+        <h2 className="text-xl font-bold mb-4">
+          {existingSubsection ? "Edit Lecture" : "Add Lecture"}
+        </h2>
 
-            <form
-              onSubmit={submitHandler}
-              className="flex flex-col gap-y-6 mt-6  "
-            >
-              <label>
-                <p className="text-sm font-medium text-richblack-5 mb-2">
-                  Lecture Video <sup className="text-pink-200">*</sup>
-                </p>
-                <input
-                  required
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileChange}
-                  className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
-                />
-              </label>
+        <form onSubmit={submitHandler} className="flex flex-col gap-5">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => setVideo(e.target.files[0])}
+            className="text-sm"
+          />
 
-              <label>
-                <p className="text-sm font-medium text-richblack-5 mb-2">
-                  Lecture Title <sup className="text-pink-200">*</sup>
-                </p>
-                <input
-                  required
-                  type="title"
-                  name="title"
-                  value={title}
-                  onChange={onChangeHandler}
-                  placeholder="Enter Lecture Title"
-                  className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
-                />
-              </label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Lecture Title"
+            className="bg-richblack-700 p-2 rounded"
+          />
 
-              <label>
-                <p className="text-sm font-medium text-richblack-5 mb-2">
-                  Lecture Description <sup className="text-pink-200">*</sup>
-                </p>
+          <textarea
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Lecture Description"
+            className="bg-richblack-700 p-2 rounded"
+          />
 
-                <textarea
-                  required
-                  type="description"
-                  name="description"
-                  value={description}
-                  onChange={onChangeHandler}
-                  placeholder="Enter Lecture Description"
-                  className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="bg-[#161D29] w-[170px] text-[#FFD60A] border border-[#FFD60A] flex justify-between items-center font-medium py-4 px-4 rounded-md  transition-all"
-              >
-                <MdOutlineCloudUpload /> <p>Upload Lecture</p>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+          <button
+            type="submit"
+            className="bg-yellow-50 text-black py-2 rounded flex items-center justify-center gap-2"
+          >
+            <MdOutlineCloudUpload />
+            {existingSubsection ? "Update Lecture" : "Upload Lecture"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default CreateSubsectionModel;
+export default CreateSubsectionModal;

@@ -1,23 +1,28 @@
 const mongoose = require("mongoose");
 
-const SubSectionSchema = new mongoose.Schema({
-    title: { 
-        type: String, 
-        required: true 
+const subSectionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    timeDuration: { 
-        type: String, 
-        required: true 
+    timeDuration: {
+      type: String,
+      required: true,
     },
-    description: { 
-        type: String, 
-        required: true 
+    description: {
+      type: String,
+      required: true,
     },
-    videoUrl: { 
-        type: String, 
-        required: true 
+    videoUrl: {
+      type: String,
+      required: true,
     },
-});
+  },
+  { timestamps: true }
+);
 
-// Prevent overwriting the model if it already exists
-module.exports = mongoose.models.SubSection || mongoose.model("SubSection", SubSectionSchema);
+module.exports =
+  mongoose.models.SubSection ||
+  mongoose.model("SubSection", subSectionSchema);

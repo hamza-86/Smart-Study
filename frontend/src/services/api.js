@@ -2,43 +2,46 @@ const BASE_URL =
   process.env.REACT_APP_BASE_URL ||
   "http://localhost:4000/api/v1";
 
-// AUTH ENDPOINTS
 export const endpoints = {
-  //auth
-  SENDOTP_API: BASE_URL + "/auth/sendotp",
-  SIGNUP_API: BASE_URL + "/auth/signup",
-  LOGIN_API: BASE_URL + "/auth/login",
-  LOGOUT_API: BASE_URL + "/auth/logout",
+  // ================= AUTH =================
+  SENDOTP_API: `${BASE_URL}/auth/sendotp`,
+  SIGNUP_API: `${BASE_URL}/auth/signup`,
+  LOGIN_API: `${BASE_URL}/auth/login`,
+  LOGOUT_API: `${BASE_URL}/auth/logout`,
 
-  //course
-  GET_ALL_COURSES_API: BASE_URL + "/course/getAllCourses",
-  GET_COURSE_DETAILS: BASE_URL + "/course/getCourseDetails",
-  CREATE_COURSE_API: BASE_URL + "/course/createCourse",
-  DELETE_COURSE_API: BASE_URL + "/course/deleteCourse",
-  GET_FULL_COURSE_DETAIL: BASE_URL + "/course/getFullCourseDetails",
+  // ================= COURSE =================
+  GET_ALL_COURSES_API: `${BASE_URL}/course/getAllCourses`,
+  CREATE_COURSE_API: `${BASE_URL}/course/createCourse`,
+  GET_INSTRUCTOR_COURSES: `${BASE_URL}/course/getInstructorCourses`,
+  GET_ENROLLED_COURSES: `${BASE_URL}/course/getEnrolledCourses`,
 
-  //instructor
-  GET_INSTRUCTOR_COURSES: BASE_URL + "/course/getInstructorCourses",
+  // PARAM BASED ROUTES (IMPORTANT)
+  GET_COURSE_DETAILS: (courseId) =>
+    `${BASE_URL}/course/getCourseDetails/${courseId}`,
 
-  //student
-  GET_ENROLLED_COURSES: BASE_URL + "/course/getEnrolledCourses",
+  DELETE_COURSE_API: (courseId) =>
+    `${BASE_URL}/course/deleteCourse/${courseId}`,
 
+  EDIT_COURSE_API: (courseId) =>
+    `${BASE_URL}/course/editCourse/${courseId}`,
 
-  //category
-  GET_ALL_CATEGORIES: BASE_URL + "/course/showAllCategories",
+  // ================= CATEGORY =================
+  GET_ALL_CATEGORIES: `${BASE_URL}/course/showAllCategories`,
 
-  //section
-  ADD_SECTION_API: BASE_URL + "/course/createSection",
-  DELETE_SECTION_API: BASE_URL + "/course/deleteSection",
-  UPDATE_SECTION_API: BASE_URL + "/course/updateSection",
+  // ================= SECTION =================
+  ADD_SECTION_API: `${BASE_URL}/course/createSection`,
+  DELETE_SECTION_API: `${BASE_URL}/course/deleteSection`,
+  UPDATE_SECTION_API: (sectionId) =>
+    `${BASE_URL}/course/updateSection/${sectionId}`,
 
-  //SubSection
-  CREATE_SUBSECTION_API: BASE_URL + "/course/createSubSection",
-  DELETE_SUBSECTION_API: BASE_URL + "/course/deleteSubSection",
-  UPDATE_SUBSECTION_API: BASE_URL + "/course/updateSubSection",
+  // ================= SUBSECTION =================
+  CREATE_SUBSECTION_API: `${BASE_URL}/course/createSubSection`,
+  DELETE_SUBSECTION_API: `${BASE_URL}/course/deleteSubSection`,
+  UPDATE_SUBSECTION_API: (subSectionId) =>
+    `${BASE_URL}/course/updateSubSection/${subSectionId}`,
 
-  //Payments
-  COURSE_PAYMENT_API: BASE_URL + "/payment/capturePayment",
-  COURSE_VERIFY_API: BASE_URL + "/payment/verifyPayment",
-  SEND_PAYMENT_SUCCESS_EMAIL_API: BASE_URL + "/payment/sendPaymentSuccessEmail",
-}
+  // ================= PAYMENTS =================
+  COURSE_PAYMENT_API: `${BASE_URL}/payment/capturePayment`,
+  COURSE_VERIFY_API: `${BASE_URL}/payment/verifyPayment`,
+  SEND_PAYMENT_SUCCESS_EMAIL_API: `${BASE_URL}/payment/sendPaymentSuccessEmail`,
+};

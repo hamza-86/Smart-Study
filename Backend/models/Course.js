@@ -1,56 +1,64 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const courseSchema = new mongoose.Schema({
+const courseSchema = new mongoose.Schema(
+  {
     title: {
-        type: String,
-        required: true,
-        trim: true,
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 120,
+      index: true,
     },
     thumbnail: {
-        type: String,
+      type: String,
     },
-    tag: {
-        type: [String],
-        required: true,
-    },
-    description: {
+    tags: [
+      {
         type: String,
-        required: true,
         trim: true,
+      },
+    ],
+    description: {
+      type: String,
+      required: true,
+      trim: true,
     },
     price: {
-        type: Number,
-        required: true,
-        default: 0,
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
     },
     category: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
     },
     whatYouWillLearn: {
-        type: String,
+      type: String,
     },
     courseContent: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Section",
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Section",
+      },
     ],
     instructor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    studentsEnrolled: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    },
-    studentsEnroled: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          ref: "User",
-        },
+        ref: "User",
+      },
     ],
-    createdAt: { 
-        type: Date, default: Date.now 
-    },
-});
+  },
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model('Course', courseSchema);
+module.exports = mongoose.model("Course", courseSchema);

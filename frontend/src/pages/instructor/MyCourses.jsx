@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { endpoints } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { VscAdd } from "react-icons/vsc";
 import InstructorCourseCard from "../../components/Instructor/InstructorCourseCard";
 import InstructorCourseCardSmall from "../../components/Instructor/InstructorCourseCardSmall";
 import { fetchInstructorCourses } from "../../services/courseAPI";
 import Footer from "../../components/Footer";
-
-const { GET_INSTRUCTOR_COURSES } = endpoints;
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -18,20 +15,21 @@ const MyCourses = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (token === null) {
+    if (!token) {
       navigate("/login");
     }
-  }, []);
+  }, [token, navigate]);
 
   useEffect(() => {
+    if (!token) return;
+
     const fetchCourses = async () => {
       const result = await fetchInstructorCourses(token, dispatch);
-
-      setCourses(result);
+      setCourses(Array.isArray(result) ? result : []);
     };
 
     fetchCourses();
-  }, [navigate]);
+  }, [token, dispatch]);
 
   const deleteHandler = (courseId) => {
     setCourses((prev) => prev.filter((course) => course._id !== courseId));

@@ -59,7 +59,7 @@ const Login = () => {
       dispatch(setUser(response.data.user));
 
       toast.success("Logged In");
-      navigate("/allCourses");
+      navigate("/dashboard");
     } catch (error) {
       //console.log("error :>> ", error);
       toast.error(error.response?.data?.message || "Login Failed");

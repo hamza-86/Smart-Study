@@ -40,12 +40,12 @@ const CourseDetailsCard = ({ course, handleBuyCourse }) => {
             <button
               className="cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900"
               onClick={
-                user && course?.studentsEnroled?.includes(user?._id)
+                user && course?.studentsEnrolled?.includes(user?._id)
                   ? () => navigate("/dashboard/enrolled-courses")
                   : handleBuyCourse
               }
             >
-              {user && course?.studentsEnroled?.includes(user?._id)
+              {user && course?.studentsEnrolled?.includes(user?._id)
                 ? "Go To Course"
                 : "Buy Now"}
             </button>

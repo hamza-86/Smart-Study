@@ -9,6 +9,7 @@ import {sidebarLinks} from "../data/dashboardLinks"
 const Sidebar = () => {
   const isDashboardOpen = useSelector((state) => state.auth.isDashboardOpen);
   const user = useSelector((state)=> state.auth.user)
+  const userRole = String(user?.accountType || "").toLowerCase();
   const dispatch = useDispatch();
   const dashboardRef = useRef(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
@@ -45,7 +46,7 @@ const Sidebar = () => {
       >
          <div className="flex flex-col">
             {sidebarLinks.map((link) => {
-                if (link.type && user?.accountType !== link.type) return null
+                if (link.type && userRole !== String(link.type).toLowerCase()) return null
                 return (
                   <SidebarLink key={link.id} link={link} iconName={link.icon} />
                 )

@@ -4,23 +4,30 @@ import EnrolledCourseCardSmall from "../../components/student/EnrolledCourseCard
 import { useSelector, useDispatch } from "react-redux";
 import { getEnrolledCourses } from "../../services/courseAPI";
 import Footer from "../../components/Footer";
+import { useNavigate } from "react-router-dom";
 
 const EnrolledCourses = () => {
   const token = useSelector((state) => state.auth.token);
   const loading = useSelector((state) => state.auth.loading);
   const [courses, setCourses] = useState([]);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (!token) {
+      navigate("/login");
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    if (!token) return;
+
     const fetchCourses = async () => {
       const response = await getEnrolledCourses(token, dispatch);
-
-      if (response?.data.success) {
-        setCourses(response.data.data);
-      }
+      setCourses(Array.isArray(response) ? response : []);
     };
     fetchCourses();
-  }, []);
+  }, [token, dispatch]);
 
   useEffect(() => {
     //console.log("courses :>> ", courses);

@@ -59,16 +59,16 @@ const Section = ({
           }}
         >
           <div className="text-textHead flex flex-col gap-2 px-7 py-6 font-semibold">
-            {section?.subSection?.map((subSec, i) => {
-              return (
-                <StudentSubSection
-                  subSec={subSec}
-                  key={i}
-                  handleVideoClick={handleVideoClick}
-                  isSelected={selectedSubSec._id === subSec._id}
-                />
-              );
-            })}
+           {section?.subSections?.map((subSec, i) => {
+  return (
+    <StudentSubSection
+      subSec={subSec}
+      key={i}
+      handleVideoClick={handleVideoClick}
+      isSelected={selectedSubSec?._id === subSec._id}
+    />
+  );
+})}
           </div>
         </div>
       </div>

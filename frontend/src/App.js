@@ -55,7 +55,7 @@
 // export default App;
 
 import { useSelector } from "react-redux";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -87,9 +87,13 @@ const ACCOUNT_TYPE = {
   INSTRUCTOR: "Instructor",
   ADMIN: "Admin",
 };
+const normalizeRole = (role) => String(role || "").toLowerCase();
 
 function App() {
   const user = useSelector((state) => state.auth.user);
+  const userRole = normalizeRole(user?.accountType);
+  const isInstructor = userRole === normalizeRole(ACCOUNT_TYPE.INSTRUCTOR);
+  const isStudent = userRole === normalizeRole(ACCOUNT_TYPE.STUDENT);
 
   return (
     <div className="bg-richblack-900 min-h-screen w-screen">
@@ -133,7 +137,7 @@ function App() {
           <Route path="/dashboard/settings" element={<Setting />} />
 
           {/* Instructor Routes */}
-          {user?.accountType === ACCOUNT_TYPE.INSTRUCTOR && (
+          {isInstructor && (
             <>
               <Route path="/dashboard/my-courses" element={<MyCourses />} />
               <Route path="/dashboard/add-course" element={<AddCourse />} />
@@ -149,7 +153,7 @@ function App() {
           )}
 
           {/* Student Routes */}
-          {user?.accountType === ACCOUNT_TYPE.STUDENT && (
+          {isStudent && (
             <>
               <Route
                 path="/dashboard/enrolled-courses"

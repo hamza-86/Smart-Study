@@ -28,7 +28,7 @@ const CreateSection = () => {
       navigate("/dashboard/add-course");
       return;
     }
-  }, []);
+  }, [courseDetails, navigate]);
 
   const courseId = courseDetails?._id;
 
@@ -44,10 +44,8 @@ const CreateSection = () => {
 
     const response = await createSection(sectionName, courseId, token);
 
-    if (response.status === 200) {
-      //console.log("response :>> ", response);
-
-      dispatch(setSections(response.data.updatedCourse.courseContent));
+    if (response?.success && response?.data) {
+      dispatch(setSections([...(sections || []), response.data]));
 
       setSection({ sectionName: "" });
     }
@@ -90,7 +88,7 @@ const CreateSection = () => {
                   key={sec._id}
                   sectionId={sec._id}
                   name={sec.sectionName}
-                  subsections={sec.subSection}
+                  subSections={sec.subSections}
                   onDelete={deleteHandler}
                   courseId={courseId}
                   token={token}

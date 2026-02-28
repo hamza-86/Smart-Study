@@ -22,7 +22,7 @@ const CourseContent = () => {
     setIsActive(
       !isActive.includes(id)
         ? isActive.concat([id])
-        : isActive.filter((e) => e != id)
+        : isActive.filter((e) => e !== id)
     );
   };
 
@@ -35,12 +35,12 @@ const CourseContent = () => {
           setCourse(courseData);
           if (
             courseData.courseContent?.length > 0 &&
-            courseData.courseContent[0].subSection?.length > 0
+            courseData.courseContent[0].subSections?.length > 0
           ) {
             setSelectedVideo(
-              courseData.courseContent[0].subSection[0].videoUrl
+              courseData.courseContent[0].subSections[0].videoUrl
             );
-            setSubSection(courseData.courseContent[0].subSection[0]);
+            setSubSection(courseData.courseContent[0].subSections[0]);
           }
         }
       } catch (error) {
@@ -49,7 +49,7 @@ const CourseContent = () => {
     };
 
     fetchCourseDetails();
-  }, [courseId]);
+  }, [courseId, token, dispatch]);
 
   const handleVideoClick = (subSec) => {
     setSelectedVideo(subSec.videoUrl);

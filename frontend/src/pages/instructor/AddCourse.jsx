@@ -42,7 +42,7 @@ const AddCourse = () => {
     const formData = new FormData();
     formData.append("title", courseData.title);
     formData.append("description", courseData.description);
-    formData.append("tag", courseData.tag);
+    formData.append("tags", courseData.tag);
     formData.append("price", courseData.price);
     formData.append("category", courseData.category);
     formData.append("whatYouWillLearn", courseData.whatYouWillLearn);

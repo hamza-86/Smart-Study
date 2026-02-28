@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Edu+SA+Beginner:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+
+* {
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+    margin: 0;
+    padding: 0;
+    scroll-behavior: smooth;
+  }
+  
+html,
+body {
+  overflow-x: hidden;
+}
+
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #afb2bf;
+}
+
+
+.CTAbutton {
+  cursor: pointer;
+  border-radius: 6px;
+  background-color: #f2e937; /* Equivalent to bg-yellow-50 */
+  padding: 8px 20px;
+  font-weight: 600; /* Equivalent to font-semibold */
+  color: #000814; /* Equivalent to text-richblack-900 */
+}
+
+.input-custom {
+  height: 120px; /* Ensures full height */
+  vertical-align: top; /* Aligns text to the top */
+  display: flex;
+  align-items: flex-start; /* Pushes text to the top */
+  padding-top: 10px; /* Adds spacing from the top */
+}
+
+
+
+.CTAbutton:hover {
+  background-color: #161D29; /* Slightly darker yellow */
+  transform: scale(1.05);
+  color: #f1ea5c; /* Slight scaling effect */
+}
+
+.CTAbuttonModal {
+  cursor: pointer;
+  border-radius: 6px;
+  background-color: #f2e937; /* Equivalent to bg-yellow-50 */
+  padding: 8px 20px;
+  font-weight: 600; /* Equivalent to font-semibold */
+  color: #000814; /* Equivalent to text-richblack-900 */
+}
+
+.CTAbuttonModal:hover {
+  background-color: #000209; /* Slightly darker yellow */
+  transform: scale(1.05);
+  color: #f1ea5c; /* Slight scaling effect */
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  position: relative;
+  animation: rotate 1s linear infinite
+}
+.loader::before , .loader::after {
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0px;
+  border-radius: 50%;
+  border: 5px solid #FFF;
+  animation: prixClipFix 2s linear infinite ;
+}
+.loader::after{
+  border-color: #FF3D00;
+  animation: prixClipFix 2s linear infinite , rotate 0.5s linear infinite reverse;
+  inset: 6px;
+}
+
+@keyframes rotate {
+  0%   {transform: rotate(0deg)}
+  100%   {transform: rotate(360deg)}
+}
+
+@keyframes prixClipFix {
+    0%   {clip-path:polygon(50% 50%,0 0,0 0,0 0,0 0,0 0)}
+    25%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 0,100% 0,100% 0)}
+    50%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,100% 100%,100% 100%)}
+    75%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0 100%,0 100%)}
+    100% {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0 100%,0 0)}
+}

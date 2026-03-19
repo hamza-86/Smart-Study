@@ -74,7 +74,7 @@ export const sidebarLinks = [
   {
     id:   8,
     name: "My Learning",
-    path: "/dashboard/enrolled-courses",
+    path: "/dashboard/my-learning",
     type: ACCOUNT_TYPE.STUDENT,
     icon: "VscBook",
   },

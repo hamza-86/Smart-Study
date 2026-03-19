@@ -1,11 +1,3 @@
-/**
- * Auth Controller
- * FILE LOCATION: Backend/controllers/auth.controller.js
- *
- * Your auth.routes.js does:  require("../controllers/auth.controller")
- * So this file must be at:   Backend/controllers/auth.controller.js
- */
-
 const {
   sendOTP,
   signup,
@@ -17,8 +9,8 @@ const {
 } = require("../services/auth.service");
 
 const { asyncHandler } = require("../middlewares/errorHandler");
-const APIResponse       = require("../utils/apiResponse");
-const APIError          = require("../utils/apiError");
+const APIResponse = require("../utils/apiResponse");
+const APIError = require("../utils/apiError");
 const {
   validateEmail,
   validatePassword,
@@ -27,21 +19,15 @@ const {
 } = require("../utils/validators");
 const { HTTP_STATUS } = require("../constants");
 
-// ── Send OTP ──────────────────────────────────────────────────────────────────
 exports.sendotp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-
   validateRequired(email, "Email");
   validateEmail(email);
 
   const result = await sendOTP(email);
-
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, "OTP sent to email"));
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, "OTP sent to email"));
 });
 
-// ── Signup ────────────────────────────────────────────────────────────────────
 exports.signup = asyncHandler(async (req, res) => {
   const {
     firstName,
@@ -53,12 +39,12 @@ exports.signup = asyncHandler(async (req, res) => {
     otp,
   } = req.body;
 
-  validateRequired(firstName,       "First name");
-  validateRequired(lastName,        "Last name");
-  validateRequired(email,           "Email");
-  validateRequired(password,        "Password");
+  validateRequired(firstName, "First name");
+  validateRequired(lastName, "Last name");
+  validateRequired(email, "Email");
+  validateRequired(password, "Password");
   validateRequired(confirmPassword, "Confirm Password");
-  validateRequired(otp,             "OTP");
+  validateRequired(otp, "OTP");
 
   validateEmail(email);
   validatePassword(password);
@@ -74,59 +60,43 @@ exports.signup = asyncHandler(async (req, res) => {
     otp,
   });
 
-  res
-    .status(HTTP_STATUS.CREATED)
-    .json(APIResponse.created(result.user, result.message));
+  res.status(HTTP_STATUS.CREATED).json(APIResponse.created(result.user, result.message));
 });
 
-// ── Login ─────────────────────────────────────────────────────────────────────
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  validateRequired(email,    "Email");
+  validateRequired(email, "Email");
   validateRequired(password, "Password");
   validateEmail(email);
 
   const result = await login(email, password);
 
-  // Secure httpOnly cookie for refresh token
   res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
-    secure:   process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, "Login successful"));
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, "Login successful"));
 });
 
-// ── Logout ────────────────────────────────────────────────────────────────────
-exports.logout = asyncHandler(async (req, res) => {
+exports.logout = asyncHandler(async (_req, res) => {
   res.clearCookie("refreshToken");
-
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(null, "Logout successful"));
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(null, "Logout successful"));
 });
 
-// ── Refresh Token ─────────────────────────────────────────────────────────────
 exports.refreshToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.cookies;
-
   if (!refreshToken) {
     throw APIError.authentication("Refresh token not found");
   }
 
   const result = await refreshAccessToken(refreshToken);
-
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, "Token refreshed"));
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, "Token refreshed"));
 });
 
-// ── Forgot Password ───────────────────────────────────────────────────────────
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -134,36 +104,33 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   validateEmail(email);
 
   const result = await forgotPassword(email);
-
   res
     .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, "If that email exists, a reset link was sent"));
+    .json(APIResponse.success(result, "If that email exists, an OTP has been sent"));
 });
 
-// ── Reset Password (token comes from email link) ──────────────────────────────
 exports.resetPassword = asyncHandler(async (req, res) => {
-  const { token }           = req.params;   // from URL: /reset-password/:token
-  const { newPassword, confirmPassword } = req.body;
+  const { email, otp, newPassword, confirmPassword } = req.body;
 
-  validateRequired(token,           "Token");
-  validateRequired(newPassword,     "New Password");
+  validateRequired(email, "Email");
+  validateRequired(otp, "OTP");
+  validateRequired(newPassword, "New Password");
   validateRequired(confirmPassword, "Confirm Password");
+
+  validateEmail(email);
+  validateOTP(otp);
   validatePassword(newPassword);
 
-  const result = await resetPassword(token, newPassword, confirmPassword);
-
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, "Password reset successful"));
+  const result = await resetPassword({ email, otp, newPassword, confirmPassword });
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, "Password reset successful"));
 });
 
-// ── Change Password (logged-in user) ─────────────────────────────────────────
 exports.changePassword = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { oldPassword, newPassword, confirmNewPassword } = req.body;
 
-  validateRequired(oldPassword,      "Old password");
-  validateRequired(newPassword,      "New password");
+  validateRequired(oldPassword, "Old password");
+  validateRequired(newPassword, "New password");
   validateRequired(confirmNewPassword, "Confirm new password");
   validatePassword(newPassword);
 
@@ -174,7 +141,5 @@ exports.changePassword = asyncHandler(async (req, res) => {
     confirmNewPassword
   );
 
-  res
-    .status(HTTP_STATUS.OK)
-    .json(APIResponse.success(result, result.message));
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, result.message));
 });

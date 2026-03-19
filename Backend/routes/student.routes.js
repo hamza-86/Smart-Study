@@ -6,7 +6,7 @@ const {
   getNotifications,
   markNotificationsRead,
   getCertificates,
-} = require("../controllers/Student.controller");
+} = require("../controllers/student.controller");
 
 const { auth, isStudent } = require("../middlewares/auth");
 

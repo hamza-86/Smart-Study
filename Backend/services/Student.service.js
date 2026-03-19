@@ -5,14 +5,14 @@
 
 const Enrollment = require("../models/Enrollment");
 const CourseProgress = require("../models/CourseProgress");
-const WatchHistory = require("../models/Watchhistory");
+const WatchHistory = require("../models/WatchHistory");
 const QuizAttempt = require("../models/QuizAttempt");
 const Certificate = require("../models/Certificate");
 const Notification = require("../models/Notification");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 
-// ─── getStudentDashboard ─────────────────────────────────────────────────────
+// --- getStudentDashboard -----------------------------------------------------
 
 const getStudentDashboard = async (userId) => {
   // Enrolled courses + progress
@@ -122,7 +122,7 @@ const getStudentDashboard = async (userId) => {
   };
 };
 
-// ─── getNotifications ────────────────────────────────────────────────────────
+// --- getNotifications --------------------------------------------------------
 
 const getNotifications = async (userId) => {
   const notifications = await Notification.find({ user: userId })
@@ -133,7 +133,7 @@ const getNotifications = async (userId) => {
   return { success: true, notifications };
 };
 
-// ─── markNotificationsRead ───────────────────────────────────────────────────
+// --- markNotificationsRead ---------------------------------------------------
 
 const markNotificationsRead = async (userId, ids = []) => {
   const filter = { user: userId };
@@ -144,7 +144,7 @@ const markNotificationsRead = async (userId, ids = []) => {
   return { success: true, message: "Notifications marked as read" };
 };
 
-// ─── getCertificates ─────────────────────────────────────────────────────────
+// --- getCertificates ---------------------------------------------------------
 
 const getCertificates = async (userId) => {
   const certificates = await Certificate.find({ user: userId })
@@ -161,3 +161,4 @@ module.exports = {
   markNotificationsRead,
   getCertificates,
 };
+

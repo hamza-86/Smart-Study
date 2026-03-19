@@ -7,6 +7,7 @@ const {
   createCourse,
   getAllCourses,
   getCourseDetails,
+  getCourseContent,
   getInstructorCourses,
   updateCourse,
   publishCourse,
@@ -89,11 +90,20 @@ exports.getAllCourses = asyncHandler(async (req, res) => {
 exports.getCourseDetails = asyncHandler(async (req, res) => {
   validateRequired(req.params.courseId, "Course ID");
 
-  const result = await getCourseDetails(req.params.courseId);
+  const result = await getCourseDetails(req.params.courseId, req.user?.id || null);
 
   res
     .status(HTTP_STATUS.OK)
     .json(APIResponse.success(result.data, "Course details retrieved"));
+});
+
+exports.getCourseContent = asyncHandler(async (req, res) => {
+  validateRequired(req.params.courseId, "Course ID");
+  const result = await getCourseContent(req.params.courseId, req.user.id);
+
+  res
+    .status(HTTP_STATUS.OK)
+    .json(APIResponse.success(result.data, "Course content retrieved"));
 });
 
 /**

@@ -1,6 +1,6 @@
 /**
  * Quiz Controller
- * Handles quiz CRUD and attempt submission â€” delegates to quiz service
+ * Handles quiz CRUD and attempt submission — delegates to quiz service
  */
 
 const {
@@ -69,7 +69,7 @@ exports.deleteQuiz = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get quiz for student â€” correct answers stripped out
+ * Get quiz for student — correct answers stripped out
  */
 exports.getQuizForStudent = asyncHandler(async (req, res) => {
   const userId = req.user.id;

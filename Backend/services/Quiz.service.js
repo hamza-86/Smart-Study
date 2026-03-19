@@ -8,7 +8,7 @@ const Quiz = require("../models/Quiz");
 const QuizAttempt = require("../models/QuizAttempt");
 const Course = require("../models/Course");
 const CourseProgress = require("../models/CourseProgress");
-const SubSection = require("../models/SubSection");
+const SubSection = require("../models/subSection");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 

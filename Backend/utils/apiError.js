@@ -118,12 +118,15 @@ class APIError extends Error {
 
   toJSON() {
     return {
-      success:    false,
-      statusCode: this.statusCode,
-      errorType:  this.errorType,
-      message:    this.message,
-      details:    this.details,
-      timestamp:  this.timestamp,
+      success: false,
+      message: this.message,
+      data: null,
+      error: {
+        statusCode: this.statusCode,
+        errorType: this.errorType,
+        details: this.details,
+      },
+      timestamp: this.timestamp,
     };
   }
 }

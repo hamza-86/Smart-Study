@@ -21,7 +21,7 @@ const DashboardPage = () => {
   }
 
   if (role === "student") {
-    return <Navigate to="/dashboard/enrolled-courses" replace />;
+    return <Navigate to="/dashboard/my-learning" replace />;
   }
 
   // Admin or unknown

@@ -3,7 +3,7 @@
  * Handles payment orders, verification, enrollment, and free course access
  */
 
-const { instance } = require("../config/razorpay");
+const { instance, hasRazorpayConfig } = require("../config/razorpay");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 const Course = require("../models/Course");
@@ -48,10 +48,19 @@ const _enrollStudent = async (userId, courseId, amountPaid, paymentId, session) 
     { session }
   );
 
-  // Add student to course.studentsEnrolled
+  const courseBefore = await Course.findById(courseId)
+    .select("studentsEnrolled")
+    .session(session);
+  const alreadyInStudentList = courseBefore?.studentsEnrolled?.some(
+    (id) => id.toString() === userId.toString()
+  );
+
   await Course.findByIdAndUpdate(
     courseId,
-    { $addToSet: { studentsEnrolled: userId }, $inc: { totalStudents: 1 } },
+    {
+      $addToSet: { studentsEnrolled: userId },
+      ...(alreadyInStudentList ? {} : { $inc: { totalStudents: 1 } }),
+    },
     { session }
   );
 
@@ -101,6 +110,10 @@ const _enrollStudent = async (userId, courseId, amountPaid, paymentId, session) 
 // ─── createPaymentOrder ──────────────────────────────────────────────────────
 
 const createPaymentOrder = async (userId, courseIds, couponCode = null) => {
+  if (!hasRazorpayConfig || !instance) {
+    throw APIError.externalAPI("Payment gateway is not configured on server");
+  }
+
   if (!Array.isArray(courseIds) || courseIds.length === 0) {
     throw APIError.validation("Please provide valid course IDs");
   }
@@ -215,6 +228,10 @@ const createPaymentOrder = async (userId, courseIds, couponCode = null) => {
 // ─── verifyPayment ───────────────────────────────────────────────────────────
 
 const verifyPayment = async (paymentData) => {
+  if (!hasRazorpayConfig || !process.env.RAZORPAY_SECRET) {
+    throw APIError.externalAPI("Payment gateway is not configured on server");
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 

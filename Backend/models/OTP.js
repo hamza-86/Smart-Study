@@ -13,6 +13,21 @@ const otpSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  purpose: {
+    type: String,
+    enum: ["signup", "password_reset"],
+    default: "signup",
+    index: true,
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 10 * 60 * 1000),
+    index: { expires: 0 },
+  },
+  attempts: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

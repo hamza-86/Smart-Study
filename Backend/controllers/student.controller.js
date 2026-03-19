@@ -1,6 +1,6 @@
 /**
  * Student Dashboard Controller
- * Dashboard stats, notifications, certificates â€” delegates to student service
+ * Dashboard stats, notifications, certificates — delegates to student service
  */
 
 const {
@@ -8,14 +8,14 @@ const {
   getNotifications,
   markNotificationsRead,
   getCertificates,
-} = require("../services/student.service");
+} = require("../services/Student.service");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const APIResponse = require("../utils/apiResponse");
 const { HTTP_STATUS } = require("../constants");
 const { validateRequired } = require("../utils/validators");
 
 /**
- * Full student dashboard â€” enrolled courses + progress + quiz stats + recent activity
+ * Full student dashboard — enrolled courses + progress + quiz stats + recent activity
  */
 exports.getStudentDashboard = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -42,7 +42,7 @@ exports.getNotifications = asyncHandler(async (req, res) => {
 
 /**
  * Mark notifications as read
- * Body: ids[] â€” if empty array, marks ALL as read
+ * Body: ids[] — if empty array, marks ALL as read
  */
 exports.markNotificationsRead = asyncHandler(async (req, res) => {
   const userId     = req.user.id;
@@ -67,3 +67,4 @@ exports.getCertificates = asyncHandler(async (req, res) => {
     .status(HTTP_STATUS.OK)
     .json(APIResponse.success(result.certificates, "Certificates retrieved"));
 });
+

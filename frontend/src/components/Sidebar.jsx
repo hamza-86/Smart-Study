@@ -2,19 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { closeDashboard, logout } from "../slices/authSlice";
 import { VscSignOut } from "react-icons/vsc";
+import { useLocation } from "react-router-dom";
 import ConfirmationModal from "./ConfirmationModal";
 import SidebarLink from "./SidebarLink";
-import {sidebarLinks} from "../data/dashboardLinks"
+import { sidebarLinks } from "../data/dashboardLinks";
 
 const Sidebar = () => {
   const isDashboardOpen = useSelector((state) => state.auth.isDashboardOpen);
-  const user = useSelector((state)=> state.auth.user)
+  const user = useSelector((state) => state.auth.user);
   const userRole = String(user?.accountType || "").toLowerCase();
   const dispatch = useDispatch();
+  const location = useLocation();
+
   const dashboardRef = useRef(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
 
-  // Close dashboard when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dashboardRef.current && !dashboardRef.current.contains(event.target)) {
@@ -31,30 +33,38 @@ const Sidebar = () => {
     };
   }, [isDashboardOpen, dispatch]);
 
+  useEffect(() => {
+    if (isDashboardOpen) {
+      dispatch(closeDashboard());
+    }
+  }, [location.pathname, isDashboardOpen, dispatch]);
+
   return (
     <>
-      {/* Overlay when Dashboard is open */}
-      {isDashboardOpen && <div className="fixed top-16 inset-0 bg-black opacity-50 z-40"></div>}
+      {isDashboardOpen && (
+        <button
+          type="button"
+          onClick={() => dispatch(closeDashboard())}
+          className="fixed top-16 inset-0 bg-black/50 z-40"
+          aria-label="Close sidebar overlay"
+        />
+      )}
 
-      {/* Sidebar with Slide-in Animation */}
       <div
         ref={dashboardRef}
-        className={`fixed left-0 top-16 h-[calc(100vh-3.5rem)] min-w-[220px] flex flex-col border-r border-richblack-700 bg-richblack-800 py-10 z-50
-          transform transition-transform duration-300 ease-in-out ${
-            isDashboardOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed left-0 top-16 h-[calc(100vh-3.5rem)] min-w-[220px] flex flex-col border-r border-richblack-700 bg-richblack-800 py-10 z-50 transform transition-transform duration-300 ease-in-out ${
+          isDashboardOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-         <div className="flex flex-col">
-            {sidebarLinks.map((link) => {
-                if (link.type && userRole !== String(link.type).toLowerCase()) return null
-                return (
-                  <SidebarLink key={link.id} link={link} iconName={link.icon} />
-                )
-            })}
-         </div>
+        <div className="flex flex-col">
+          {sidebarLinks.map((link) => {
+            if (link.type && userRole !== String(link.type).toLowerCase()) return null;
+            return <SidebarLink key={link.id} link={link} iconName={link.icon} />;
+          })}
+        </div>
         <div className="mx-auto mt-6 mb-6 h-[1px] w-10/12 bg-richblack-700" />
         <div className="flex flex-col">
-        <SidebarLink
+          <SidebarLink
             link={{ name: "Settings", path: "/dashboard/settings" }}
             iconName="VscSettingsGear"
           />
@@ -66,8 +76,9 @@ const Sidebar = () => {
                 btn1Text: "Logout",
                 btn2Text: "Cancel",
                 btn1Handler: () => {
-                  dispatch(logout())
-                  setConfirmationModal(false)},
+                  dispatch(logout());
+                  setConfirmationModal(false);
+                },
                 btn2Handler: () => setConfirmationModal(false),
               })
             }

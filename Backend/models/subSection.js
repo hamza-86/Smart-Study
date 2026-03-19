@@ -16,7 +16,7 @@ const subSectionSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // ── Video ──────────────────────────────────────────────────
+    // -- Video --------------------------------------------------
     videoUrl: {
       type: String,
       required: true,
@@ -38,7 +38,7 @@ const subSectionSchema = new mongoose.Schema(
       default: false,
     },
 
-    // ── Attachments / Notes ────────────────────────────────────
+    // -- Attachments / Notes ------------------------------------
     attachments: [
       {
         name: { type: String, trim: true },
@@ -47,7 +47,7 @@ const subSectionSchema = new mongoose.Schema(
       },
     ],
 
-    // ── Quizzes linked to this lecture ─────────────────────────
+    // -- Quizzes linked to this lecture -------------------------
     quizzes: [
       {
         type: mongoose.Schema.Types.ObjectId,

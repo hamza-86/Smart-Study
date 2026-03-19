@@ -1,6 +1,5 @@
 /**
  * Authentication Service
- * Handles all auth-related business logic
  */
 
 const bcrypt = require("bcrypt");
@@ -14,7 +13,8 @@ const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 const { TOKEN_EXPIRY, ACCOUNT_TYPES } = require("../constants");
 
-// ─── Token helpers ──────────────────────────────────────────────────────────
+const OTP_EXPIRY_MS = TOKEN_EXPIRY.OTP_EXPIRY_MS || 10 * 60 * 1000;
+const MAX_RESET_ATTEMPTS = Number(process.env.RESET_OTP_MAX_ATTEMPTS || 5);
 
 const generateAccessToken = (user) =>
   jwt.sign(
@@ -30,7 +30,7 @@ const generateRefreshToken = (user) =>
     { expiresIn: TOKEN_EXPIRY.REFRESH_TOKEN || "7d" }
   );
 
-// ─── sendOTP ────────────────────────────────────────────────────────────────
+const hashOtp = (otp) => crypto.createHash("sha256").update(String(otp)).digest("hex");
 
 const sendOTP = async (email) => {
   const normalizedEmail = email.toLowerCase().trim();
@@ -40,8 +40,7 @@ const sendOTP = async (email) => {
     throw APIError.conflict("Email already registered");
   }
 
-  // Delete any previous OTP for this email
-  await OTP.deleteMany({ email: normalizedEmail });
+  await OTP.deleteMany({ email: normalizedEmail, purpose: "signup" });
 
   const otp = otpGenerator.generate(6, {
     upperCaseAlphabets: false,
@@ -52,24 +51,20 @@ const sendOTP = async (email) => {
   await OTP.create({
     email: normalizedEmail,
     otp,
+    purpose: "signup",
     createdAt: new Date(),
-    // TTL index handles expiry; also store explicit field for manual check
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    expiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
   });
 
   await mailSender(
     normalizedEmail,
-    "Email Verification OTP — EduFlow",
-    `<p>Your OTP for EduFlow registration is: <strong>${otp}</strong></p>
-     <p>This OTP expires in 10 minutes.</p>`
+    "Email Verification OTP - SmartStudy",
+    `<p>Your verification OTP is: <strong>${otp}</strong></p><p>This OTP expires in 10 minutes.</p>`
   );
 
-  logger.info("OTP sent", { email: normalizedEmail });
-
+  logger.info("Signup OTP sent", { email: normalizedEmail });
   return { success: true };
 };
-
-// ─── signup ─────────────────────────────────────────────────────────────────
 
 const signup = async (userData) => {
   const {
@@ -93,15 +88,14 @@ const signup = async (userData) => {
     throw APIError.conflict("User already exists");
   }
 
-  // Verify OTP (latest one for this email)
-  const recentOTP = await OTP.findOne({ email: normalizedEmail }).sort({
+  const recentOTP = await OTP.findOne({ email: normalizedEmail, purpose: "signup" }).sort({
     createdAt: -1,
   });
 
   if (!recentOTP) {
     throw APIError.validation("OTP not found. Please request a new OTP");
   }
-  if (recentOTP.otp !== otp) {
+  if (recentOTP.otp !== String(otp)) {
     throw APIError.validation("Invalid OTP");
   }
   if (recentOTP.expiresAt && recentOTP.expiresAt < new Date()) {
@@ -125,13 +119,12 @@ const signup = async (userData) => {
     lastLogin: new Date(),
   });
 
-  await OTP.deleteMany({ email: normalizedEmail });
+  await OTP.deleteMany({ email: normalizedEmail, purpose: "signup" });
 
-  // Welcome email
   await mailSender(
     normalizedEmail,
-    "Welcome to EduFlow!",
-    `<p>Hi ${user.firstName}, welcome to EduFlow! Start learning today.</p>`
+    "Welcome to SmartStudy",
+    `<p>Hi ${user.firstName}, welcome to SmartStudy!</p>`
   );
 
   logger.info("User registered", { userId: user._id, email: normalizedEmail });
@@ -143,7 +136,7 @@ const signup = async (userData) => {
       id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
-      name: user.name,           // virtual
+      name: user.name,
       email: user.email,
       accountType: user.accountType,
       avatar: user.avatar,
@@ -151,14 +144,10 @@ const signup = async (userData) => {
   };
 };
 
-// ─── login ──────────────────────────────────────────────────────────────────
-
 const login = async (email, password) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  const user = await User.findOne({ email: normalizedEmail }).select(
-    "+password"
-  );
+  const user = await User.findOne({ email: normalizedEmail }).select("+password");
 
   if (!user) {
     throw APIError.authentication("Invalid email or password");
@@ -173,11 +162,10 @@ const login = async (email, password) => {
     throw APIError.authentication("Invalid email or password");
   }
 
-  // Update last login
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  const accessToken  = generateAccessToken(user);
+  const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
   logger.info("User logged in", { userId: user._id });
@@ -199,8 +187,6 @@ const login = async (email, password) => {
   };
 };
 
-// ─── refreshAccessToken ─────────────────────────────────────────────────────
-
 const refreshAccessToken = async (refreshToken) => {
   let decoded;
   try {
@@ -212,7 +198,6 @@ const refreshAccessToken = async (refreshToken) => {
     throw APIError.authentication("Invalid or expired refresh token");
   }
 
-  // Fetch fresh user (ensures isActive / accountType are current)
   const user = await User.findById(decoded.id);
   if (!user) {
     throw APIError.authentication("User not found");
@@ -221,85 +206,83 @@ const refreshAccessToken = async (refreshToken) => {
     throw APIError.authorization("Account is deactivated");
   }
 
-  const newAccessToken = generateAccessToken(user);
-
-  return { success: true, accessToken: newAccessToken };
+  return { success: true, accessToken: generateAccessToken(user) };
 };
-
-// ─── forgotPassword ─────────────────────────────────────────────────────────
 
 const forgotPassword = async (email) => {
   const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+passwordResetOtpAttempts +passwordResetOtpLastSentAt"
+  );
 
-  const user = await User.findOne({ email: normalizedEmail });
-
-  // Always return success to prevent user enumeration
   if (!user) {
-    logger.info("Forgot password: email not found (silent)", {
-      email: normalizedEmail,
-    });
+    logger.info("Forgot password requested for unknown email", { email: normalizedEmail });
     return { success: true };
   }
 
-  // Generate a secure random token
-  const rawToken   = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(rawToken)
-    .digest("hex");
+  const otp = otpGenerator.generate(6, {
+    upperCaseAlphabets: false,
+    lowerCaseAlphabets: false,
+    specialChars: false,
+  });
 
-  user.resetPasswordToken  = hashedToken;
-  user.resetPasswordExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  user.passwordResetOtpHash = hashOtp(otp);
+  user.passwordResetOtpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+  user.passwordResetOtpAttempts = 0;
+  user.passwordResetOtpLastSentAt = new Date();
+
   await user.save({ validateBeforeSave: false });
-
-  const resetLink = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
 
   await mailSender(
     normalizedEmail,
-    "Password Reset — EduFlow",
-    `<p>Hi ${user.firstName},</p>
-     <p>Click the link below to reset your password. It expires in 15 minutes.</p>
-     <a href="${resetLink}">${resetLink}</a>
-     <p>If you didn't request this, ignore this email.</p>`
+    "SmartStudy Password Reset OTP",
+    `<p>Your password reset OTP is: <strong>${otp}</strong></p><p>Expires in 10 minutes.</p>`
   );
 
-  logger.info("Reset link sent", { userId: user._id });
-
+  logger.info("Password reset OTP sent", { userId: user._id });
   return { success: true };
 };
 
-// ─── resetPassword ──────────────────────────────────────────────────────────
-
-const resetPassword = async (rawToken, newPassword, confirmPassword) => {
+const resetPassword = async ({ email, otp, newPassword, confirmPassword }) => {
   if (newPassword !== confirmPassword) {
     throw APIError.validation("Passwords do not match");
   }
 
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(rawToken)
-    .digest("hex");
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+password +passwordResetOtpHash +passwordResetOtpExpiry +passwordResetOtpAttempts"
+  );
 
-  const user = await User.findOne({
-    resetPasswordToken:  hashedToken,
-    resetPasswordExpiry: { $gt: new Date() },
-  }).select("+resetPasswordToken +resetPasswordExpiry");
-
-  if (!user) {
-    throw APIError.validation("Reset token is invalid or has expired");
+  if (!user || !user.passwordResetOtpHash || !user.passwordResetOtpExpiry) {
+    throw APIError.validation("Reset request is invalid or expired");
   }
 
-  user.password            = await bcrypt.hash(newPassword, 12);
-  user.resetPasswordToken  = undefined;
-  user.resetPasswordExpiry = undefined;
-  await user.save();
+  if (user.passwordResetOtpExpiry < new Date()) {
+    throw APIError.validation("OTP has expired. Please request a new one.");
+  }
+
+  if (user.passwordResetOtpAttempts >= MAX_RESET_ATTEMPTS) {
+    throw APIError.rateLimit("Too many invalid OTP attempts. Please request a new OTP.");
+  }
+
+  const isOtpValid = hashOtp(otp) === user.passwordResetOtpHash;
+  if (!isOtpValid) {
+    user.passwordResetOtpAttempts += 1;
+    await user.save({ validateBeforeSave: false });
+    throw APIError.authentication("Invalid OTP");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 12);
+  user.passwordResetOtpHash = undefined;
+  user.passwordResetOtpExpiry = undefined;
+  user.passwordResetOtpAttempts = 0;
+  user.passwordResetOtpLastSentAt = undefined;
+
+  await user.save({ validateBeforeSave: false });
 
   logger.info("Password reset successful", { userId: user._id });
-
   return { success: true, message: "Password reset successful" };
 };
-
-// ─── changePassword ─────────────────────────────────────────────────────────
 
 const changePassword = async (userId, oldPassword, newPassword, confirmPassword) => {
   if (newPassword !== confirmPassword) {
@@ -320,7 +303,6 @@ const changePassword = async (userId, oldPassword, newPassword, confirmPassword)
   await user.save();
 
   logger.info("Password changed", { userId });
-
   return { success: true, message: "Password changed successfully" };
 };
 

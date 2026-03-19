@@ -5,7 +5,7 @@
 
 const mongoose = require("mongoose");
 const Section = require("../models/Section");
-const SubSection = require("../models/SubSection");
+const SubSection = require("../models/subSection");
 const Course = require("../models/Course");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const APIError = require("../utils/apiError");

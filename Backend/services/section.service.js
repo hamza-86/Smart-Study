@@ -6,7 +6,7 @@
 const mongoose = require("mongoose");
 const Course = require("../models/Course");
 const Section = require("../models/Section");
-const SubSection = require("../models/SubSection");
+const SubSection = require("../models/subSection");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 

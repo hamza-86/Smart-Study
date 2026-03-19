@@ -9,7 +9,7 @@ const Enrollment = require("../models/Enrollment");
 const InstructorEarnings = require("../models/InstructorEarnings");
 const CourseProgress = require("../models/CourseProgress");
 const QuizAttempt = require("../models/QuizAttempt");
-const WatchHistory = require("../models/Watchhistory");
+const WatchHistory = require("../models/WatchHistory");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 

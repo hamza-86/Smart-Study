@@ -119,6 +119,10 @@ function App() {
             {isStudent && (
               <>
                 <Route
+                  path="/dashboard/my-learning"
+                  element={<EnrolledCourses />}
+                />
+                <Route
                   path="/dashboard/enrolled-courses"
                   element={<EnrolledCourses />}
                 />

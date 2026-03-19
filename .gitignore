@@ -9,7 +9,7 @@ backend/node_modules/
 # Environment files
 # --------------------
 .env
-
+.env.*
 frontend/.env
 frontend/.env.example
 backend/.env

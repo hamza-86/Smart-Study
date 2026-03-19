@@ -1,61 +1,25 @@
-/**
- * AllCourses Page
- * FILE: src/pages/AllCourse.jsx
- *
- * Changes from original:
- *  - No longer requires login — courses are public
- *  - Uses fetchAllCourses from courseServices (not raw axios)
- *  - instructor name uses firstName/lastName (new User model)
- *  - Added search bar and loading skeleton
- *  - Passes averageRating and totalStudents to CourseCard
- */
-
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BiSearch } from "react-icons/bi";
 import CourseCard from "../components/CourseCard";
 import Footer from "../components/Footer";
-import { fetchAllCourses } from "../services/courseServices";
+import { useGetCourses } from "../hooks";
 
 const AllCourses = () => {
-  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const { data: courses = [], isLoading } = useGetCourses();
 
-  const [courses,  setCourses]  = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [search,   setSearch]   = useState("");
-  const [loading,  setLoading]  = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const result = await fetchAllCourses();
-      const list = Array.isArray(result) ? result : (result?.data || []);
-      setCourses(list);
-      setFiltered(list);
-      setLoading(false);
-    };
-    load();
-  }, []);
-
-  // Client-side search filter
-  useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(courses);
-      return;
-    }
+  const filtered = useMemo(() => {
+    if (!search.trim()) return courses;
     const q = search.toLowerCase();
-    setFiltered(
-      courses.filter(
-        (c) =>
-          c.title?.toLowerCase().includes(q) ||
-          c.category?.name?.toLowerCase().includes(q) ||
-          c.instructor?.firstName?.toLowerCase().includes(q)
-      )
+    return courses.filter(
+      (c) =>
+        c.title?.toLowerCase().includes(q) ||
+        c.category?.name?.toLowerCase().includes(q) ||
+        c.instructor?.firstName?.toLowerCase().includes(q)
     );
   }, [search, courses]);
 
-  // Skeleton cards
   const Skeleton = () => (
     <div className="w-[280px] h-[300px] rounded-xl bg-richblack-800 animate-pulse" />
   );
@@ -63,8 +27,6 @@ const AllCourses = () => {
   return (
     <>
       <div className="bg-richblack-900 min-h-screen w-full">
-
-        {/* Header banner */}
         <div className="bg-richblack-800 pt-24 pb-10 px-4">
           <div className="max-w-6xl mx-auto">
             <motion.h1
@@ -74,11 +36,8 @@ const AllCourses = () => {
             >
               All Courses
             </motion.h1>
-            <p className="text-richblack-300 text-sm mb-6">
-              {courses.length} courses available
-            </p>
+            <p className="text-richblack-300 text-sm mb-6">{courses.length} courses available</p>
 
-            {/* Search */}
             <div className="relative max-w-md">
               <BiSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-richblack-400"
@@ -95,11 +54,12 @@ const AllCourses = () => {
           </div>
         </div>
 
-        {/* Course grid */}
         <div className="max-w-6xl mx-auto px-4 py-10">
-          {loading ? (
+          {isLoading ? (
             <div className="flex flex-wrap gap-6 justify-center">
-              {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} />
+              ))}
             </div>
           ) : filtered.length > 0 ? (
             <motion.div
@@ -134,10 +94,7 @@ const AllCourses = () => {
             <div className="flex flex-col items-center justify-center py-24">
               <p className="text-richblack-300 text-xl mb-2">No courses found</p>
               {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="mt-4 text-yellow-50 text-sm underline"
-                >
+                <button onClick={() => setSearch("")} className="mt-4 text-yellow-50 text-sm underline">
                   Clear search
                 </button>
               )}

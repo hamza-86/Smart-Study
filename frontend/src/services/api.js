@@ -21,7 +21,7 @@ export const endpoints = {
   LOGOUT_API:           `${BASE_URL}/auth/logout`,
   REFRESH_TOKEN_API:    `${BASE_URL}/auth/refresh-token`,
   FORGOT_PASSWORD_API:  `${BASE_URL}/auth/forgot-password`,
-  RESET_PASSWORD_API:   (token) => `${BASE_URL}/auth/reset-password/${token}`,
+  RESET_PASSWORD_API:   `${BASE_URL}/auth/reset-password`,
   CHANGE_PASSWORD_API:  `${BASE_URL}/auth/change-password`,
 
   // ── Profile ─────────────────────────────────────────────────────────────────

@@ -1,41 +1,23 @@
-/**
- * EnrolledCourses Page
- * FILE: src/pages/student/EnrolledCourses.jsx
- *
- * Changes from original:
- *  - Fixed import: getEnrolledCourses from courseServices.js (not courseAPI)
- *  - Courses now include progress data (completionPercentage, lastAccessedAt)
- *    because getEnrolledCourses service attaches progress to each course
- *  - Improved empty state with a proper call to action
- *  - Added total count display
- */
-
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useSelector } from "react-redux";
+import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import EnrolledCourseCard      from "../../components/student/EnrolledCourseCard";
+import EnrolledCourseCard from "../../components/student/EnrolledCourseCard";
 import EnrolledCourseCardSmall from "../../components/student/EnrolledCourseCardSmall";
-import Footer    from "../../components/Footer";
+import Footer from "../../components/Footer";
 import EmptyState from "../../components/common/EmptyState";
-import { getEnrolledCourses } from "../../services/courseServices";
+import { useEnrolledCourses } from "../../hooks";
 
 const EnrolledCourses = () => {
-  const navigate  = useNavigate();
-  const dispatch  = useDispatch();
-  const token     = useSelector((state) => state.auth.token);
-  const loading   = useSelector((state) => state.auth.loading);
+  const navigate = useNavigate();
+  const token = useSelector((state) => state.auth.token);
+  const { data: courses = [], isLoading } = useEnrolledCourses(Boolean(token));
 
-  const [courses, setCourses] = useState([]);
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-  useEffect(() => {
-    if (!token) { navigate("/login"); return; }
-    getEnrolledCourses(token, dispatch).then((result) => {
-      setCourses(Array.isArray(result) ? result : []);
-    });
-  }, [token, dispatch, navigate]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid min-h-screen place-items-center bg-richblack-900">
         <div className="loader" />
@@ -52,8 +34,6 @@ const EnrolledCourses = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="mt-16 min-h-screen w-full max-w-5xl px-4 pb-16">
-
-          {/* Header */}
           <div className="flex justify-between items-center pt-10 mb-8">
             <div>
               <h1 className="text-richblack-5 font-bold text-2xl lg:text-3xl">My Learning</h1>
@@ -71,26 +51,14 @@ const EnrolledCourses = () => {
 
           {courses.length > 0 ? (
             <>
-              {/* Desktop */}
               <div className="hidden lg:flex flex-col gap-4">
                 {courses.map((course, index) => (
-                  <EnrolledCourseCard
-                    key={course._id}
-                    course={course}
-                    token={token}
-                    index={index}
-                  />
+                  <EnrolledCourseCard key={course._id} course={course} token={token} index={index} />
                 ))}
               </div>
-              {/* Mobile */}
               <div className="flex lg:hidden flex-col gap-5">
                 {courses.map((course, index) => (
-                  <EnrolledCourseCardSmall
-                    key={course._id}
-                    course={course}
-                    token={token}
-                    index={index}
-                  />
+                  <EnrolledCourseCardSmall key={course._id} course={course} token={token} index={index} />
                 ))}
               </div>
             </>

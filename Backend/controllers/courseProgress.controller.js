@@ -4,7 +4,7 @@
  */
 
 const CourseProgress = require("../models/CourseProgress");
-const WatchHistory = require("../models/Watchhistory");
+const WatchHistory = require("../models/WatchHistory");
 const Course = require("../models/Course");
 const Certificate = require("../models/Certificate");
 const Notification = require("../models/Notification");

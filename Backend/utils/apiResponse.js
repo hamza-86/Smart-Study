@@ -10,6 +10,7 @@ class APIResponse {
     this.data       = data;
     this.message    = message;
     this.success    = statusCode < 400;
+    this.error      = null;
     this.timestamp  = new Date();
   }
 
@@ -51,6 +52,7 @@ class APIResponse {
       statusCode: HTTP_STATUS.OK,
       message,
       data,
+      error: null,
       pagination: {
         total,
         page:       parseInt(page),
@@ -72,6 +74,7 @@ class APIResponse {
       statusCode: HTTP_STATUS.OK,
       message,
       data,
+      error: null,
       count:      Array.isArray(data) ? data.length : 0,
       timestamp:  new Date(),
     };
@@ -85,6 +88,7 @@ class APIResponse {
       statusCode: this.statusCode,
       message:    this.message,
       data:       this.data,
+      error:      this.error,
       timestamp:  this.timestamp,
     };
   }

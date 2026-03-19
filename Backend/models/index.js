@@ -14,7 +14,7 @@ module.exports = {
   QuizAttempt: require('./QuizAttempt'),
   Review: require('./Review'),
   Section: require('./Section'),
-  SubSection: require('./SubSection'),
+  SubSection: require('./subSection'),
   User: require('./User'),
   // WatchHistory: require('./WatchHistory'),
   Coupon: require('./Coupon'),

@@ -6,6 +6,7 @@ import logo from "../assets/Logo-Full-Light.png";
 import menuIcon from "../assets/menu.svg";
 import closeIcon from "../assets/close.svg";
 import ConfirmationModal from "./ConfirmationModal";
+import SidebarToggleButton from "./reusable/SidebarToggleButton";
 
 const Navbar = () => {
   const { token } = useSelector((state) => state.auth);
@@ -18,24 +19,24 @@ const Navbar = () => {
     <>
       <div className="flex h-16 z-30 items-center justify-center border-b-[1px] bg-richblack-800 border-b-richblack-700 top-0 fixed w-full">
         <div className="flex w-11/12 max-w-maxContent items-center justify-between">
-          {/* Logo */}
-          <Link to="/">
-            <div className="flex items-center gap-2">
-              <img src={logo} alt="Logo" className="object-contain lg:w-8 w-7" />
-              <p className="lg:text-xl text-lg font-semibold text-white">SmartLearn</p>
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            {token ? <SidebarToggleButton onClick={() => dispatch(toggleDashboard())} /> : null}
+            <Link to="/">
+              <div className="flex items-center gap-2">
+                <img src={logo} alt="Logo" className="object-contain lg:w-8 w-7" />
+                <p className="lg:text-xl text-lg font-semibold text-white">SmartLearn</p>
+              </div>
+            </Link>
+          </div>
 
-          {/* Desktop Menu */}
           <div className="hidden sm:flex items-center gap-4">
             {token ? (
               <>
-                <button
-                  className="rounded-md px-4 py-2 bg-richblack-900 text-white hover:bg-yellow-50 hover:scale-95 hover:text-richblack-900 transition-all duration-200"
-                  onClick={() => dispatch(toggleDashboard())}
-                >
-                  Dashboard
-                </button>
+                <Link to="/dashboard">
+                  <button className="rounded-md px-4 py-2 bg-richblack-900 text-white hover:bg-yellow-50 hover:scale-95 hover:text-richblack-900 transition-all duration-200">
+                    Dashboard
+                  </button>
+                </Link>
                 <button
                   onClick={() =>
                     setConfirmationModal({
@@ -59,7 +60,7 @@ const Navbar = () => {
             ) : (
               <>
                 <Link to="/login">
-                  <button  className="rounded-md px-4 py-2 bg-richblack-900 text-white hover:bg-yellow-50 hover:scale-95 hover:text-richblack-900 transition-all duration-200">
+                  <button className="rounded-md px-4 py-2 bg-richblack-900 text-white hover:bg-yellow-50 hover:scale-95 hover:text-richblack-900 transition-all duration-200">
                     Login
                   </button>
                 </Link>
@@ -72,7 +73,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
           <div className="sm:hidden relative">
             <img
               src={toggle ? closeIcon : menuIcon}
@@ -81,7 +81,6 @@ const Navbar = () => {
               onClick={() => setToggle(!toggle)}
             />
 
-            {/* Mobile Dropdown Menu */}
             {toggle && (
               <div className="absolute right-0 top-12 z-10 w-40 rounded-lg bg-richblack-800 p-4 shadow-lg">
                 <ul className="flex flex-col gap-4">
@@ -95,33 +94,33 @@ const Navbar = () => {
                             setToggle(false);
                           }}
                         >
-                          Dashboard
+                          Dashboard Menu
                         </button>
                       </li>
                       <li>
-                      <button
-                  onClick={() =>
-                    setConfirmationModal({
-                      text1: "Are you sure?",
-                      text2: "You will be logged out of your account.",
-                      btn1Text: "Logout",
-                      btn2Text: "Cancel",
-                      btn1Handler: () => {
-                        dispatch(logout());
-                        setConfirmationModal(false);
-                        navigate("/");
-                      },
-                      btn2Handler: () => setConfirmationModal(false),
-                    })
-                  }
-                  className="w-full text-left text-white hover:text-gray-400"
-                >
-                  Logout
-                </button>
+                        <button
+                          onClick={() =>
+                            setConfirmationModal({
+                              text1: "Are you sure?",
+                              text2: "You will be logged out of your account.",
+                              btn1Text: "Logout",
+                              btn2Text: "Cancel",
+                              btn1Handler: () => {
+                                dispatch(logout());
+                                setConfirmationModal(false);
+                                navigate("/");
+                              },
+                              btn2Handler: () => setConfirmationModal(false),
+                            })
+                          }
+                          className="w-full text-left text-white hover:text-gray-400"
+                        >
+                          Logout
+                        </button>
                       </li>
                     </>
                   ) : (
-                    <> 
+                    <>
                       <li>
                         <Link
                           to="/login"

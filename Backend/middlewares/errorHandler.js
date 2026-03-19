@@ -96,11 +96,14 @@ const errorHandler = (err, req, res, next) => {
 
   // ── Send response ────────────────────────────────────────
   res.status(statusCode).json({
-    success:   false,
-    statusCode,
-    errorType,
+    success: false,
     message,
-    details,
+    data: null,
+    error: {
+      statusCode,
+      errorType,
+      details,
+    },
     timestamp: new Date(),
     ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });

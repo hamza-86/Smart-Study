@@ -7,6 +7,7 @@ const {
   createPaymentOrder,
   verifyPayment,
   getEnrolledCourses,
+  enrollFreeCourse,
 } = require("../services/payment.service");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const APIResponse = require("../utils/apiResponse");
@@ -79,4 +80,14 @@ exports.getEnrolledCourses = asyncHandler(async (req, res) => {
         "Enrolled courses retrieved"
       )
     );
+});
+
+exports.enrollFreeCourse = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { courseId } = req.body;
+
+  validateRequired(courseId, "Course ID");
+
+  const result = await enrollFreeCourse(userId, courseId);
+  res.status(HTTP_STATUS.OK).json(APIResponse.success(result, result.message));
 });

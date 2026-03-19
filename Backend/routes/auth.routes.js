@@ -31,7 +31,7 @@ router.post("/refresh-token",                 refreshToken);
 
 // ── Password ────────────────────────────────────────────────────────────
 router.post("/forgot-password",               forgotPassword);
-router.post("/reset-password/:token",         resetPassword);
+router.post("/reset-password",                resetPassword);
 router.put("/change-password",   auth,        changePassword);
 
 // ── Profile ─────────────────────────────────────────────────────────────

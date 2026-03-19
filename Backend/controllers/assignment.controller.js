@@ -1,6 +1,6 @@
 /**
  * Assignment Controller
- * Handles assignment CRUD, submissions, and grading â€” delegates to assignment service
+ * Handles assignment CRUD, submissions, and grading — delegates to assignment service
  */
 
 const {

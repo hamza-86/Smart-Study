@@ -154,10 +154,12 @@ export const forgotPassword = async (email) => {
 };
 
 // ── Reset Password ────────────────────────────────────────────────────────────
-export const resetPassword = async (token, newPassword, confirmPassword, navigate) => {
+export const resetPassword = async (email, otp, newPassword, confirmPassword, navigate) => {
   const toastId = toast.loading("Resetting password...");
   try {
-    const response = await axiosInstance.post(RESET_PASSWORD_API(token), {
+    const response = await axiosInstance.post(RESET_PASSWORD_API, {
+      email,
+      otp,
       newPassword,
       confirmPassword,
     });

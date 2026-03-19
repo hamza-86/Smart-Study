@@ -5,6 +5,7 @@ const {
   createCourse,
   getAllCourses,
   getCourseDetails,
+  getCourseContent,
   editCourse,
   getInstructorCourses,
   deleteCourse,
@@ -31,7 +32,7 @@ const {
   submitQuizAttempt,
   getMyAttempts,
   getAllAttempts,
-} = require("../controllers/Quiz.controller");
+} = require("../controllers/quiz.controller");
 
 const {
   createAssignment,
@@ -40,7 +41,7 @@ const {
   gradeSubmission,
   getSubmissions,
   getMySubmissions,
-} = require("../controllers/Assignment.controller");
+} = require("../controllers/assignment.controller");
 
 const {
   auth,
@@ -52,6 +53,7 @@ const {
 // ── Public course browsing ──────────────────────────────────────────────
 router.get("/getAllCourses", getAllCourses);
 router.get("/getCourseDetails/:courseId", optionalAuth, getCourseDetails);
+router.get("/:courseId/content", auth, isStudent, getCourseContent);
 
 // ── Instructor: course management ──────────────────────────────────────
 router.post("/createCourse", auth, isInstructor, createCourse);
@@ -96,3 +98,4 @@ router.post("/assignments/:assignmentId/submit",
 router.get("/assignments/my/:courseId", auth, isStudent, getMySubmissions);
 
 module.exports = router;
+

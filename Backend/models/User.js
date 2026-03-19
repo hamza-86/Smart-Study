@@ -58,6 +58,23 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    passwordResetOtpHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetOtpExpiry: {
+      type: Date,
+      select: false,
+    },
+    passwordResetOtpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    passwordResetOtpLastSentAt: {
+      type: Date,
+      select: false,
+    },
 
     // ── Profile ────────────────────────────────────────────────
     bio: {

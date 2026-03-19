@@ -1,19 +1,21 @@
 const express = require("express");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const mongoose = require("mongoose");
 
-const dbConnect = require("./config/database");
+const dbConnect = require("./config/dataBase");
 const { cloudinaryConnect } = require("./config/cloudinary");
 const logger = require("./utils/logger");
 const { errorHandler, notFoundHandler } = require("./middlewares/errorHandler");
 const requestLogger = require("./middlewares/requestLogger");
+const { requireDbConnection } = require("./middlewares/dbReady");
 
-// ── Route imports ─────────────────────────────────────────────────────────────
 const authRoutes = require("./routes/auth.routes");
 const courseRoutes = require("./routes/course.routes");
 const paymentRoutes = require("./routes/payment.routes");
@@ -26,10 +28,8 @@ const couponRoutes = require("./routes/coupon.routes");
 
 const app = express();
 
-// ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet());
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:3000",
@@ -39,24 +39,19 @@ app.use(
   })
 );
 
-// ── Body parsers ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 
-// ── File upload ───────────────────────────────────────────────────────────────
 app.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: process.env.TEMP_DIR || "/tmp",
-    limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB (videos)
+    limits: { fileSize: 500 * 1024 * 1024 },
     abortOnLimit: true,
   })
 );
 
-// ── Rate limiting ─────────────────────────────────────────────────────────────
-
-// Global: 200 req / 15 min per IP
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
@@ -66,7 +61,6 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// Auth endpoints: 10 req / 15 min (brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -77,21 +71,16 @@ const authLimiter = rateLimit({
 app.use("/api/v1/auth/login", authLimiter);
 app.use("/api/v1/auth/sendotp", authLimiter);
 app.use("/api/v1/auth/forgot-password", authLimiter);
+app.use("/api/v1/auth/reset-password", authLimiter);
 
-// ── Request logger ────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== "test") {
   app.use(requestLogger);
 }
 
-// ── Connect DB & Cloudinary ───────────────────────────────────────────────────
-dbConnect();
-cloudinaryConnect();
-
-// ── Health check ──────────────────────────────────────────────────────────────
 app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: "EduFlow API is running 🚀",
+    message: "SmartStudy API is running",
     version: "1.0.0",
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date(),
@@ -99,10 +88,15 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ success: true, status: "healthy", timestamp: new Date() });
+  res.status(200).json({
+    success: true,
+    message: "Service healthy",
+    data: { dbState: mongoose.connection.readyState },
+    error: null,
+  });
 });
 
-// ── API Routes ────────────────────────────────────────────────────────────────
+app.use("/api/v1", requireDbConnection);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/payments", paymentRoutes);
@@ -113,54 +107,62 @@ app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/coupons", couponRoutes);
 
-// ── 404 handler (must be after all routes) ────────────────────────────────────
 app.use(notFoundHandler);
-
-// ── Global error handler (must be last) ──────────────────────────────────────
 app.use(errorHandler);
 
-// ── Server startup ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
+let server;
 
-const server = app.listen(PORT, () => {
-  logger.info(`Server started`, {
-    port: PORT,
-    environment: process.env.NODE_ENV || "development",
-    url: `http://localhost:${PORT}`,
+const startServer = async () => {
+  await dbConnect();
+  cloudinaryConnect();
+
+  server = app.listen(PORT, () => {
+    logger.info("Server started", {
+      port: PORT,
+      environment: process.env.NODE_ENV || "development",
+      url: `http://localhost:${PORT}`,
+    });
   });
-});
+};
 
-// ── Graceful shutdown ─────────────────────────────────────────────────────────
 const gracefulShutdown = (signal) => {
-  logger.info(`${signal} received — shutting down gracefully`);
+  logger.info(`${signal} received. Shutting down gracefully.`);
+
+  if (!server) {
+    process.exit(0);
+  }
+
   server.close(() => {
     logger.info("HTTP server closed");
-    const mongoose = require("mongoose");
     mongoose.connection.close(false, () => {
       logger.info("MongoDB connection closed");
       process.exit(0);
     });
   });
 
-  // Force exit after 10 s if something hangs
   setTimeout(() => {
     logger.error("Forced shutdown after timeout");
     process.exit(1);
-  }, 10_000);
+  }, 10000);
 };
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
-// ── Process-level error guards ────────────────────────────────────────────────
 process.on("uncaughtException", (error) => {
-  logger.error("Uncaught Exception — shutting down", error);
+  logger.error("Uncaught exception. Shutting down.", error);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled Rejection — shutting down", new Error(String(reason)));
+  logger.error("Unhandled rejection. Shutting down.", new Error(String(reason)));
   process.exit(1);
 });
 
-module.exports = app; // for testing
+startServer().catch((error) => {
+  logger.error("Failed to start server", error);
+  process.exit(1);
+});
+
+module.exports = app;

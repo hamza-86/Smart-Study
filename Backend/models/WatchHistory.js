@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-// One document per user+video session â€” updated on each watch
+// One document per user+video session — updated on each watch
 const watchHistorySchema = new mongoose.Schema(
   {
     user: {

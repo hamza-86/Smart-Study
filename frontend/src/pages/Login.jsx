@@ -1,49 +1,33 @@
-/**
- * Login Page
- * FILE: src/pages/Login.jsx
- *
- * Changes from original:
- *  - Uses login() from authServices (not raw axios)
- *  - Response shape changed: accessToken + user (not token + user)
- *  - Added "Forgot Password?" link
- *  - Removed account type tab (login doesn't need it — backend detects from DB)
- *  - Added form loading state
- */
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { motion } from "framer-motion";
 import signupImage from "../assets/signupImage.png";
-import { login } from "../services/Authservices";
+import { useLogin } from "../hooks";
 
 const inputClass =
   "w-full border border-richblack-600 bg-richblack-700 text-richblack-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-50 placeholder:text-richblack-400 transition";
 
 const Login = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const { mutateAsync: doLogin, isPending } = useLogin();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    // login() from authServices handles toast, Redux dispatch, localStorage, and navigation
-    await login(formData.email, formData.password, navigate, dispatch);
-    setLoading(false);
+    const result = await doLogin({ email: formData.email, password: formData.password });
+    if (result?.success) {
+      navigate("/dashboard");
+    }
   };
 
   return (
     <div className="min-h-screen bg-richblack-900 flex items-center justify-center px-4 py-24 lg:py-10 flex-col-reverse lg:flex-row gap-10">
-
-      {/* Form */}
       <motion.div
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
@@ -52,13 +36,10 @@ const Login = () => {
       >
         <h1 className="text-richblack-5 text-3xl font-bold mb-2">Welcome Back</h1>
         <p className="text-richblack-300 text-sm mb-8">
-          Discover your passions.{" "}
-          <span className="italic text-blue-100 font-semibold">Be Unstoppable.</span>
+          Discover your passions. <span className="italic text-blue-100 font-semibold">Be Unstoppable.</span>
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-          {/* Email */}
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-richblack-5">
               Email Address <sup className="text-pink-200">*</sup>
@@ -74,7 +55,6 @@ const Login = () => {
             />
           </label>
 
-          {/* Password */}
           <label className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-richblack-5">
@@ -107,16 +87,14 @@ const Login = () => {
             </div>
           </label>
 
-          {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={isPending}
             className="w-full py-3 rounded-lg bg-yellow-50 text-richblack-900 font-bold hover:bg-yellow-100 transition disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {isPending ? "Signing in..." : "Sign In"}
           </button>
 
-          {/* Sign up link */}
           <p className="text-center text-richblack-300 text-sm">
             Don't have an account?{" "}
             <Link to="/signup" className="text-yellow-50 font-medium hover:underline">
@@ -126,17 +104,12 @@ const Login = () => {
         </form>
       </motion.div>
 
-      {/* Image */}
       <motion.div
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <img
-          src={signupImage}
-          alt="Login"
-          className="w-full max-w-[520px]"
-        />
+        <img src={signupImage} alt="Login" className="w-full max-w-[520px]" />
       </motion.div>
     </div>
   );

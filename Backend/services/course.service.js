@@ -8,7 +8,7 @@ const Course = require("../models/Course");
 const User = require("../models/User");
 const Category = require("../models/Category");
 const Section = require("../models/Section");
-const SubSection = require("../models/SubSection");
+const SubSection = require("../models/subSection");
 const Enrollment = require("../models/Enrollment");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const APIError = require("../utils/apiError");
@@ -50,6 +50,18 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
       instructorRevenuePercent,
     } = courseData;
 
+    if (!title || !description || !category || price === undefined || price === null) {
+      throw APIError.validation("title, description, price, and category are required");
+    }
+    if (!thumbnail) {
+      throw APIError.validation("Course thumbnail is required");
+    }
+
+    const parsedPrice = parseFloat(price);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      throw APIError.validation("Price must be a non-negative number");
+    }
+
     if (!mongoose.Types.ObjectId.isValid(category)) {
       throw APIError.validation("Invalid category ID");
     }
@@ -75,9 +87,9 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
           title:          title.trim(),
           subtitle:       subtitle?.trim() || "",
           description:    description.trim(),
-          price:          parseFloat(price),
+          price:          parsedPrice,
           discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
-          isFree:         parseFloat(price) === 0,
+          isFree:         parsedPrice === 0,
           instructor:     instructorId,
           whatYouWillLearn: parseArrayField(whatYouWillLearn),
           requirements:   parseArrayField(requirements),
@@ -521,3 +533,4 @@ module.exports = {
   publishCourse,
   deleteCourse,
 };
+

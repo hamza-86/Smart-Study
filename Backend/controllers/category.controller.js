@@ -10,6 +10,36 @@ const APIResponse = require("../utils/apiResponse");
 const { HTTP_STATUS } = require("../constants");
 const { validateRequired } = require("../utils/validators");
 
+const DEFAULT_CATEGORIES = [
+  { name: "Web Development", description: "Frontend, backend, and full-stack web development" },
+  { name: "App Development", description: "Mobile app development for Android and iOS" },
+  { name: "Data Science", description: "Data analysis, visualization, and statistics" },
+  { name: "Machine Learning", description: "ML models, algorithms, and production pipelines" },
+  { name: "Artificial Intelligence", description: "AI fundamentals and practical applications" },
+  { name: "Cyber Security", description: "Security concepts, pentesting, and secure coding" },
+  { name: "DevOps", description: "CI/CD, automation, infrastructure, and deployment" },
+  { name: "Cloud Computing", description: "Cloud architecture and services" },
+];
+
+const slugify = (value) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-");
+
+const ensureDefaultCategories = async () => {
+  const count = await Category.countDocuments();
+  if (count > 0) return;
+
+  const payload = DEFAULT_CATEGORIES.map((item) => ({
+    ...item,
+    slug: slugify(item.name),
+  }));
+
+  await Category.insertMany(payload, { ordered: false });
+};
+
 /**
  * Create category (Admin only)
  */
@@ -47,6 +77,8 @@ exports.createCategory = asyncHandler(async (req, res) => {
  * Get all active categories
  */
 exports.showAllCategories = asyncHandler(async (req, res) => {
+  await ensureDefaultCategories();
+
   const categories = await Category.find({ isActive: true })
     .populate("parentCategory", "name slug")
     .select("-courses")

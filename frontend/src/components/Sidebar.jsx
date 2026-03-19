@@ -34,10 +34,8 @@ const Sidebar = () => {
   }, [isDashboardOpen, dispatch]);
 
   useEffect(() => {
-    if (isDashboardOpen) {
-      dispatch(closeDashboard());
-    }
-  }, [location.pathname, isDashboardOpen, dispatch]);
+    dispatch(closeDashboard());
+  }, [location.pathname, dispatch]);
 
   return (
     <>

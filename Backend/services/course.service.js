@@ -26,6 +26,29 @@ const parseArrayField = (field) => {
   }
 };
 
+const resolveCategoryId = async (categoryInput, session) => {
+  if (mongoose.Types.ObjectId.isValid(categoryInput)) {
+    const category = await Category.findById(categoryInput).session(session);
+    if (category) return category._id;
+  }
+
+  const normalized = String(categoryInput || "").trim();
+  if (!normalized) return null;
+
+  const byName = await Category.findOne({
+    name: { $regex: new RegExp(`^${normalized}$`, "i") },
+  }).session(session);
+  if (byName) return byName._id;
+
+  const slug = normalized
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-");
+
+  const bySlug = await Category.findOne({ slug }).session(session);
+  return bySlug?._id || null;
+};
+
 // ─── createCourse ────────────────────────────────────────────────────────────
 
 const createCourse = async (instructorId, courseData, thumbnail) => {
@@ -62,12 +85,8 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
       throw APIError.validation("Price must be a non-negative number");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(category)) {
-      throw APIError.validation("Invalid category ID");
-    }
-
-    const categoryExists = await Category.findById(category).session(session);
-    if (!categoryExists) {
+    const resolvedCategoryId = await resolveCategoryId(category, session);
+    if (!resolvedCategoryId) {
       throw APIError.notFound("Category");
     }
 
@@ -95,7 +114,7 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
           requirements:   parseArrayField(requirements),
           targetAudience: parseArrayField(targetAudience),
           tags:           parseArrayField(tags),
-          category,
+          category: resolvedCategoryId,
           thumbnail:      thumbnailUrl,
           level:          level || "All Levels",
           language:       language || "English",
@@ -118,7 +137,7 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
 
     // Add course to category
     await Category.findByIdAndUpdate(
-      category,
+      resolvedCategoryId,
       { $push: { courses: newCourse[0]._id } },
       { session }
     );

@@ -20,9 +20,13 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await doLogin({ email: formData.email, password: formData.password });
-    if (result?.success) {
-      navigate("/dashboard");
+    try {
+      const result = await doLogin({ email: formData.email, password: formData.password });
+      if (result?.success) {
+        navigate("/dashboard");
+      }
+    } catch {
+      // handled by useLogin onError toast
     }
   };
 

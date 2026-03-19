@@ -7,6 +7,16 @@ const sectionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    order: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
     subSections: [
       {
         type: mongoose.Schema.Types.ObjectId,

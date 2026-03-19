@@ -1,108 +1,120 @@
-import React from "react";
-import { formatDate } from "../../utils/formateDate";
-import { FiEdit2 } from "react-icons/fi";
+/**
+ * InstructorCourseCardSmall Component (Mobile)
+ * FILE: src/components/Instructor/InstructorCourseCardSmall.jsx
+ *
+ * Changes from original:
+ *  - Response check fixed: deleteCourse returns data directly
+ *    (original had `if (response.status === 200)` which always failed
+ *     because the service no longer returns an axios response object)
+ *  - Replaced inline delete modal with ConfirmDialog component
+ *  - Added navigate to edit course on edit button click
+ *  - Added course status badge
+ *  - Added loading state on delete
+ */
+
+import React, { useState } from "react";
+import { useNavigate }      from "react-router-dom";
+import { FiEdit2 }          from "react-icons/fi";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { useState } from "react";
-import { deleteCourse } from "../../services/courseAPI";
-import { motion } from "framer-motion";
-import { fadeIn } from "../../utils/motion";
+import { motion }           from "framer-motion";
+
+import ConfirmDialogue      from "../common/ConfirmDialogue";
+import { fadeIn }           from "../../utils/motion";
+import { formatDate }       from "../../utils/formateDate";
+import { deleteCourse }     from "../../services/courseServices";
+
+const statusColors = {
+  Published:   "bg-caribbeangreen-900 text-caribbeangreen-200",
+  Draft:       "bg-richblack-700 text-richblack-300",
+  Archived:    "bg-pink-900 text-pink-300",
+  UnderReview: "bg-blue-900 text-blue-300",
+};
+
+const TRUNCATE = 10; // words
 
 const InstructorCourseCardSmall = ({ course, token, onDelete, index }) => {
-  const TRUNCATE_LENGTH = 10;
-  const [isModalOpen, setModalOpen] = useState(false);
-  const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
+  const navigate = useNavigate();
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [deleting,     setDeleting]   = useState(false);
 
-  const deleteHandler = async () => {
-    const response = await deleteCourse(course._id, token);
-
-    if (response.status === 200) {
-      onDelete(course._id);
-    }
+  const handleDelete = async () => {
+    setDeleting(true);
+    // Returns data directly — no .status === 200 check needed
+    const result = await deleteCourse(course._id, token);
+    setDeleting(false);
+    setDeleteOpen(false);
+    if (result) onDelete(course._id);
   };
+
+  const words       = course.description?.split(" ") || [];
+  const description = words.length > TRUNCATE
+    ? words.slice(0, TRUNCATE).join(" ") + "..."
+    : course.description;
+
+  const status     = course.status || "Draft";
+  const badgeClass = statusColors[status] || statusColors.Draft;
 
   return (
     <motion.div
-      variants={fadeIn("up", "spring", index * 0.5, 0.75)}
+      variants={fadeIn("up", "spring", index * 0.1, 0.5)}
       initial="hidden"
       animate="show"
     >
-      <div className="bg-richblack-800 w-[300px] h-[390px]  text-white rounded-xl shadow-md overflow-hidden transition-transform transform hover:scale-105">
-        {/* Course Thumbnail */}
-        <img
-          src={course.thumbnail}
-          alt="Course Thumbnail"
-          className="h-[210px] w-full object-cover"
-          loading="lazy"
-        />
+      <div className="bg-richblack-800 w-[300px] text-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
 
-        {/* Course Details */}
+        {/* Thumbnail */}
+        <div className="relative">
+          <img
+            src={course.thumbnail || "/placeholder-course.jpg"}
+            alt={course.title}
+            className="h-[180px] w-full object-cover"
+            loading="lazy"
+          />
+          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
+            {status}
+          </span>
+        </div>
+
+        {/* Details */}
         <div className="p-4">
-          <h2 className="text-base font-semibold line-clamp-2">
-            {course.title}
-          </h2>
-          <p className="text-sm text-[#838894] line-clamp-2 mt-1">
-            {course?.description.split(" ").length > TRUNCATE_LENGTH
-              ? course?.description
-                  .split(" ")
-                  .slice(0, TRUNCATE_LENGTH)
-                  .join(" ") + "..."
-              : course?.description}
-          </p>
-
-          {/* Instructor Name */}
-          <p className="mt-2 text-sm text-[#c8cbd3]">
+          <h2 className="font-semibold text-sm line-clamp-2 mb-1">{course.title}</h2>
+          <p className="text-xs text-richblack-400 line-clamp-2 mb-2">{description}</p>
+          <p className="text-xs text-richblack-400 mb-3">
             Created: {formatDate(course.createdAt)}
           </p>
 
           <div className="flex items-center justify-between">
-            {/* Price */}
-            <p className="text-lg font-bold mt-3">Rs. {course.price}</p>
+            <p className="font-bold text-richblack-5">₹{course.price}</p>
 
-            <div className="text-sm font-medium text-richblack-100 pt-3">
-              <button className="px-2 transition-all duration-200 hover:scale-110 hover:text-caribbeangreen-300">
-                <FiEdit2 size={20} />
-              </button>
-
+            <div className="flex items-center gap-1 text-richblack-300">
               <button
-                className="px-2 transition-all duration-200 hover:scale-110 hover:text-caribbeangreen-300"
-                onClick={openModal}
+                title="Edit course"
+                onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
+                className="p-1.5 rounded-lg hover:bg-richblack-700 hover:text-caribbeangreen-300 transition"
               >
-                <RiDeleteBin6Line size={20} />
+                <FiEdit2 size={16} />
+              </button>
+              <button
+                title="Delete course"
+                onClick={() => setDeleteOpen(true)}
+                className="p-1.5 rounded-lg hover:bg-richblack-700 hover:text-pink-400 transition"
+              >
+                <RiDeleteBin6Line size={16} />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className=" p-6 rounded-lg shadow-[0_5px_15px_rgba(255,_255,_255,_0.5)] text-white bg-richblack-800 w-[80%] max-w-lg h-[35vh] relative overflow-hidden">
-            <h1 className="text-2xl font-bold text-gray-800">
-              Confirm Deletion{" "}
-            </h1>
-            <p className=" text-richblack-100 mt-5">
-              Once deleted, this course and all its content will be permanently
-              removed. This action is irreversible.
-            </p>
-
-            <div className=" flex justify-evenly mt-11 ">
-              <button
-                className="CTAbuttonModal flex justify-center items-center gap-2 text-[15px]"
-                onClick={deleteHandler}
-              >
-                Delete
-              </button>
-              <button
-                className=" bg-white CTAbuttonModal flex justify-center items-center gap-2 text-[15px]"
-                onClick={closeModal}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialogue
+        isOpen={isDeleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title="Delete Course?"
+        message={`"${course.title}" and all its content will be permanently deleted. This cannot be undone.`}
+        confirmLabel="Delete Course"
+      />
     </motion.div>
   );
 };

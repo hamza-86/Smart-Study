@@ -1,86 +1,178 @@
-import React, { useEffect, useState } from "react";
+/**
+ * CourseContent Page
+ * FILE: src/pages/student/CourseContent.jsx
+ *
+ * Changes from original:
+ *  - Fixed import: fetchEnrolledCourse + updateCourseProgress + updateWatchTime from courseServices.js
+ *  - Calls updateWatchTime every 10 seconds while video plays
+ *  - Calls updateCourseProgress when video reaches 90% (marks as complete)
+ *  - Calls getResumeInfo on load to resume from last position
+ *  - Shows completion percentage in sidebar
+ */
+
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
-import { fetchEnrolledCourse } from "../../services/courseAPI";
-import Section from "../../components/student/Section";
-import Footer from "../../components/Footer";
 import { motion } from "framer-motion";
-import { textVariant } from "../../utils/motion";
+import Section from "../../components/student/Section";
+import Footer  from "../../components/Footer";
+import {
+  fetchEnrolledCourse,
+  updateCourseProgress,
+  updateWatchTime,
+  getResumeInfo,
+  getCourseProgress,
+} from "../../services/courseServices";
 
 const CourseContent = () => {
-  const token = useSelector((state) => state.auth.token);
-  const loading = useSelector((state) => state.auth.loading);
+  const dispatch   = useDispatch();
+  const token      = useSelector((state) => state.auth.token);
+  const loading    = useSelector((state) => state.auth.loading);
   const { courseId } = useParams();
-  const [course, setCourse] = useState();
-  const [selectedVideo, setSelectedVideo] = useState();
-  const [subSection, setSubSection] = useState();
-  const dispatch = useDispatch();
 
-  const [isActive, setIsActive] = useState(Array(0));
-  const handleActive = (id) => {
-    // console.log("called", id)
-    setIsActive(
-      !isActive.includes(id)
-        ? isActive.concat([id])
-        : isActive.filter((e) => e !== id)
+  const [course,         setCourse]         = useState(null);
+  const [selectedVideo,  setSelectedVideo]  = useState(null);
+  const [subSection,     setSubSection]     = useState(null);
+  const [completedVideos,setCompletedVideos]= useState([]);
+  const [completion,     setCompletion]     = useState(0);
+  const [isActive,       setIsActive]       = useState([]);
+
+  const videoRef           = useRef(null);
+  const watchIntervalRef   = useRef(null);
+  const markedCompleteRef  = useRef(new Set()); // track which subSections already marked
+
+  const handleActive = (id) =>
+    setIsActive((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
     );
-  };
 
+  // ── Fetch course on mount ─────────────────────────────────────────────────
   useEffect(() => {
-    const fetchCourseDetails = async () => {
-      try {
-        const response = await fetchEnrolledCourse(courseId, token, dispatch);
-        if (response.status === 200) {
-          const courseData = response.data.data.courseDetails;
-          setCourse(courseData);
-          if (
-            courseData.courseContent?.length > 0 &&
-            courseData.courseContent[0].subSections?.length > 0
-          ) {
-            setSelectedVideo(
-              courseData.courseContent[0].subSections[0].videoUrl
-            );
-            setSubSection(courseData.courseContent[0].subSections[0]);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching course details:", error);
+    const load = async () => {
+      const response = await fetchEnrolledCourse(courseId, token, dispatch);
+      if (!response) return;
+
+      const courseData = response?.data?.data?.courseDetails || response;
+      setCourse(courseData);
+
+      // Fetch progress
+      const progress = await getCourseProgress(courseId);
+      if (progress) {
+        setCompletedVideos(progress.completedVideos || []);
+        setCompletion(progress.completionPercentage || 0);
+        markedCompleteRef.current = new Set(
+          progress.completedVideos?.map((id) => String(id)) || []
+        );
+      }
+
+      // Resume from last position
+      const resume = await getResumeInfo(courseId);
+      if (resume?.lastWatchedVideo) {
+        setSelectedVideo(resume.lastWatchedVideo.videoUrl);
+        setSubSection(resume.lastWatchedVideo);
+      } else if (courseData?.courseContent?.[0]?.subSections?.[0]) {
+        const first = courseData.courseContent[0].subSections[0];
+        setSelectedVideo(first.videoUrl);
+        setSubSection(first);
       }
     };
 
-    fetchCourseDetails();
+    load();
   }, [courseId, token, dispatch]);
 
+  // ── Watch time tracking ────────────────────────────────────────────────────
+  const startWatchTracking = useCallback(() => {
+    if (watchIntervalRef.current) clearInterval(watchIntervalRef.current);
+    watchIntervalRef.current = setInterval(() => {
+      const video = videoRef.current;
+      if (!video || !subSection || video.paused) return;
+      updateWatchTime(
+        courseId,
+        subSection._id,
+        Math.round(video.currentTime),
+        Math.round(video.duration || 0),
+        Math.round(video.currentTime)
+      );
+    }, 10_000); // every 10 seconds
+  }, [courseId, subSection]);
+
+  const stopWatchTracking = useCallback(() => {
+    if (watchIntervalRef.current) {
+      clearInterval(watchIntervalRef.current);
+      watchIntervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopWatchTracking(), [stopWatchTracking]);
+
+  // ── Mark complete when video reaches 90% ─────────────────────────────────
+  const handleTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !subSection) return;
+    const { currentTime, duration } = video;
+    if (!duration) return;
+
+    const ratio = currentTime / duration;
+    const subId = String(subSection._id);
+
+    if (ratio >= 0.9 && !markedCompleteRef.current.has(subId)) {
+      markedCompleteRef.current.add(subId);
+      updateCourseProgress(courseId, subSection._id).then((result) => {
+        if (result) {
+          setCompletedVideos(result.completedVideos || []);
+          setCompletion(result.completionPercentage || 0);
+        }
+      });
+    }
+  }, [courseId, subSection]);
+
+  // ── Change video ──────────────────────────────────────────────────────────
   const handleVideoClick = (subSec) => {
+    stopWatchTracking();
     setSelectedVideo(subSec.videoUrl);
     setSubSection(subSec);
   };
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center">
-        <div className="loader"></div>
+      <div className="grid min-h-screen place-items-center bg-richblack-900">
+        <div className="loader" />
       </div>
     );
   }
 
   return (
     <>
-      <div className=" min-h-screen mb-10 h-auto flex flex-col-reverse md:flex-row gap-4 w-full">
-        <div className=" w-[95%] mx-auto md:w-[40%] lg:w-[26%] min-h-screen lg:bg-richblack-800  ">
-          <motion.div
-            variants={textVariant()}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-          >
-            <h1 className=" text-white hidden md:block  md:pt-24 text-[18px] font-bold pl-5">
+      <div className="min-h-screen flex flex-col-reverse md:flex-row bg-richblack-900">
+
+        {/* ── Left Sidebar — Course outline ───────────────────────────────── */}
+        <div className="w-full md:w-[36%] lg:w-[28%] md:min-h-screen bg-richblack-800 flex flex-col">
+
+          {/* Course title + progress */}
+          <div className="px-4 pt-24 pb-4 border-b border-richblack-700">
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-richblack-5 font-bold text-base leading-snug mb-3"
+            >
               {course?.title}
-            </h1>
-          </motion.div>
-          <div className="  md:w-[90%] mx-auto lg:pt-4 hidden  lg:flex items-center border-b-2 border-richblack-700"></div>
-          <div className=" md:pt-5 lg:mb-5">
-            {course?.courseContent.map((section, index) => (
+            </motion.h1>
+
+            {/* Progress bar */}
+            <div className="w-full bg-richblack-700 rounded-full h-1.5 mb-1">
+              <div
+                className="bg-yellow-50 h-1.5 rounded-full transition-all"
+                style={{ width: `${completion}%` }}
+              />
+            </div>
+            <p className="text-richblack-400 text-xs">
+              {completion}% complete
+            </p>
+          </div>
+
+          {/* Sections list */}
+          <div className="flex-1 overflow-y-auto py-2">
+            {course?.courseContent?.map((section, index) => (
               <Section
                 key={section._id}
                 section={section}
@@ -88,44 +180,50 @@ const CourseContent = () => {
                 handleActive={handleActive}
                 handleVideoClick={handleVideoClick}
                 selectedSubSec={subSection}
+                completedVideos={completedVideos}
                 index={index}
               />
             ))}
           </div>
         </div>
 
-        <div className=" md:hidden block pt-3">
-          <h1 className=" text-white pl-5">{subSection?.title}</h1>
-          <p className=" pl-5 text-richblack-400">{subSection?.description}</p>
-        </div>
+        {/* ── Right — Video player ────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col">
 
-        <div className=" w-full">
-          <div className="w-[100%] flex-col mx-auto md:mt-16 lg:mt-20 sm:h-[300px] md:h-[400px] lg:h-[600px] flex justify-center items-center">
+          {/* Video player */}
+          <div className="w-full flex items-center justify-center bg-black md:mt-16 lg:mt-20 aspect-video max-h-[60vh]">
             {selectedVideo ? (
               <video
+                ref={videoRef}
                 key={selectedVideo}
                 src={selectedVideo}
                 controls
                 autoPlay
                 controlsList="nodownload"
-                className="w-full max-w-[95%] aspect-video max-h-[590px] bg-black border border-richblack-800 rounded-lg"
+                className="w-full h-full object-contain"
+                onPlay={startWatchTracking}
+                onPause={stopWatchTracking}
+                onEnded={stopWatchTracking}
+                onTimeUpdate={handleTimeUpdate}
               />
             ) : (
-              <p className="text-white text-lg">Select a lecture to watch</p>
+              <p className="text-richblack-400 text-lg">Select a lecture to watch</p>
             )}
           </div>
 
-          <div className=" hidden md:block lg:pt-3 lg:pl-4 lg:mb-6 lg:w-[80%]">
-            <h1 className=" text-white pl-5">{subSection?.title}</h1>
-            <p className=" pl-5 text-richblack-400">
-              {subSection?.description}
-            </p>
-          </div>
+          {/* Lecture info */}
+          {subSection && (
+            <div className="px-5 py-4">
+              <h2 className="text-richblack-5 font-semibold text-lg">{subSection.title}</h2>
+              {subSection.description && (
+                <p className="text-richblack-400 text-sm mt-1 leading-relaxed">
+                  {subSection.description}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
-        <h1 className=" text-white md:hidden block pt-24 mb-2 text-[18px] font-bold pl-5">
-          {course?.title}
-        </h1>
       </div>
       <Footer />
     </>

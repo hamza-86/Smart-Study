@@ -1,23 +1,41 @@
+/**
+ * Home Page
+ * FILE: src/pages/Home.jsx
+ *
+ * Changes from original:
+ *  - "SmartLearn" branding references replaced with "EduFlow"
+ *  - CTA buttons now go to /allCourses (not /login) — public can browse
+ *  - Added useSelector to show different CTA text if already logged in
+ */
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import heroImg from "../assets/hero image.webp";
-import { PiShareFatFill } from "react-icons/pi";
-import TimelineSection from "../components/HomePage/TimeLine";
-import InstructorSection from "../components/HomePage/InstructorSection";
-import LearningLanguageSection from "../components/HomePage/LearningLanguagesSection";
-import Footer from "../components/Footer";
+import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
+import { MdArrowForward } from "react-icons/md";
+import heroImg from "../assets/hero image.webp";
+import TimelineSection        from "../components/HomePage/TimeLine";
+import InstructorSection      from "../components/HomePage/InstructorSection";
+import LearningLanguageSection from "../components/HomePage/LearningLanguagesSection";
+import Footer  from "../components/Footer";
 import { textVariant, fadeIn } from "../utils/motion";
 
 const Home = () => {
   const navigate = useNavigate();
+  const token    = useSelector((state) => state.auth.token);
+
+  const ctaLabel    = token ? "Browse Courses"    : "Start Learning Free";
+  const ctaPath     = token ? "/allCourses"        : "/signup";
+  const secondLabel = token ? "Continue Learning"  : "Learn More";
+  const secondPath  = token ? "/dashboard"         : "/allCourses";
 
   return (
-    <div className=" min-h-screen h-auto flex w-full  flex-col justify-center items-center">
-      <div className="  bg-richblack-900 lg:pt-24 lg:min-h-screen relative mx-auto flex flex-col md:flex-row  w-full max-w-screen-xl items-center justify-between gap-9 lg:gap-5 text-white">
-        {/* Left Section - Text & Button */}
+    <div className="min-h-screen h-auto flex w-full flex-col justify-center items-center">
 
-        <div className="text-center md:text-left space-y-6 pt-28  lg:pt-0 w-[90%] ">
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <div className="bg-richblack-900 lg:pt-24 lg:min-h-screen relative mx-auto flex flex-col md:flex-row w-full max-w-screen-xl items-center justify-between gap-9 lg:gap-5 text-white px-4">
+
+        <div className="text-center md:text-left space-y-6 pt-28 lg:pt-0 w-[90%]">
           <motion.div
             variants={textVariant()}
             initial="hidden"
@@ -28,83 +46,80 @@ const Home = () => {
               Empower Your Future with Coding Skills
             </h1>
           </motion.div>
+
           <motion.p
             variants={fadeIn("", "", 0.1, 1)}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.2 }}
-            className="text-secondary mt-4 max-w-3xl  text-[17px] leading-[30px]"
+            className="text-lg text-richblack-200 max-w-xl leading-relaxed"
           >
-            <p className="text-lg text-richblack-200">
-              With our coding courses, you can learn at your own pace, from
-              anywhere in the world, and get access to a wealth of resources,
-              including hands-on projects, quizzes, and personalized feedback
-              from instructors.
-            </p>
+            With our coding courses, you can learn at your own pace, from
+            anywhere in the world, and get access to hands-on projects, quizzes,
+            and personalised feedback from expert instructors.
           </motion.p>
 
-          {/* Share Button */}
-          <button
-            onClick={() => navigate("/login")}
-            className={`bg-yellow-50 mx-auto lg:mx-0  text-black text-center text-[13px] sm:text-[16px] px-4 flex gap-2 items-center py-3 rounded-md font-bold shadow-[2px_2px_0px_0px_rgba(255,255,255,0.18)] hover:shadow-none hover:scale-95 hover:bg-richblack-800 hover:text-yellow-50 transition-all duration-200 `}
-          >
-            <span className="bg-gradient-to-b from-[#1FA2FF] text-[16px] via-[#12D8FA] to-[#A6FFCB] bg-clip-text">
-              Learn More
-            </span>
-            <PiShareFatFill className="text-black" />
-          </button>
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+            <button
+              onClick={() => navigate(ctaPath)}
+              className="flex items-center gap-2 bg-yellow-50 text-richblack-900 px-6 py-3 rounded-lg font-bold hover:bg-yellow-100 transition shadow-md"
+            >
+              {ctaLabel}
+              <MdArrowForward size={18} />
+            </button>
+            <button
+              onClick={() => navigate(secondPath)}
+              className="flex items-center gap-2 border border-richblack-500 text-richblack-200 px-6 py-3 rounded-lg font-medium hover:bg-richblack-800 transition"
+            >
+              {secondLabel}
+            </button>
+          </div>
         </div>
-
-        {/* Right Section - Image */}
 
         <img
           src={heroImg}
-          alt="Hero"
-          className="w-full md:w-[58%] h-auto max-h-full rounded-lg shadow-lg"
+          alt="Hero — students learning online"
+          className="w-full md:w-[55%] h-auto rounded-xl shadow-xl"
         />
       </div>
 
+      {/* ── Skills section ─────────────────────────────────────────────── */}
       <div className="w-full bg-[#F9F9F9] px-4 sm:px-6">
-        <div className="mx-auto mt-36 lg:mt-0 flex max-w-maxContent flex-col items-center justify-evenly gap-8 ">
-          {/* Job that is in Demand - Section 1 */}
-          <div className="mb-10  mt-[-100px]  flex flex-col justify-between gap-7 lg:mt-20 lg:flex-row lg:gap-0">
-            <div className="text-4xl font-semibold lg:w-[45%] ">
+        <div className="mx-auto mt-24 lg:mt-0 flex max-w-maxContent flex-col items-center justify-evenly gap-8">
+
+          <div className="mb-10 mt-[-100px] flex flex-col justify-between gap-7 lg:mt-20 lg:flex-row lg:gap-0">
+            <div className="text-4xl font-semibold lg:w-[45%]">
               Get the skills you need for a{" "}
               <span className="bg-gradient-to-b from-[#1FA2FF] via-[#12D8FA] to-[#A6FFCB] text-transparent bg-clip-text font-bold">
                 job that is in demand.
               </span>
             </div>
-            <div className="flex flex-col items-start gap-10 lg:w-[40%]">
-              <div className="text-[15px] text-[#2C333F] font-semibold">
-                The modern SmartLearn is the dictates its own terms. Today, to
-                be a competitive specialist requires more than professional
-                skills.
-              </div>
-
-              <div
-                onClick={() => navigate("/login")}
-                className={`bg-yellow-50 text-black text-center text-[13px] sm:text-[16px] px-6 py-3 rounded-md font-bold shadow-[2px_2px_0px_0px_rgba(255,255,255,0.18)] hover:shadow-none hover:scale-95 hover:bg-richblack-800 hover:text-yellow-50 transition-all duration-200 `}
+            <div className="flex flex-col items-start gap-8 lg:w-[40%]">
+              <p className="text-[15px] text-[#2C333F] font-semibold leading-relaxed">
+                Today's learner sets their own terms. To stay competitive you
+                need more than just professional skills — you need up-to-date,
+                practical knowledge from real industry practitioners.
+              </p>
+              <button
+                onClick={() => navigate("/allCourses")}
+                className="bg-yellow-50 text-richblack-900 px-6 py-3 rounded-lg font-bold hover:bg-yellow-100 transition"
               >
-                Learn More
-              </div>
+                Explore Courses
+              </button>
             </div>
           </div>
 
-          {/* Timeline Section - Section 2 */}
           <TimelineSection />
-
-          {/* Learning Language Section - Section 3 */}
           <LearningLanguageSection />
         </div>
       </div>
 
+      {/* ── Instructor section ─────────────────────────────────────────── */}
       <div className="relative mx-auto my-20 flex w-11/12 max-w-maxContent flex-col items-center justify-between gap-8 bg-richblack-900 text-white">
-        {/* Become a instructor section */}
         <InstructorSection />
       </div>
 
-      <div className=" w-full">
-        {/* Footer */}
+      <div className="w-full">
         <Footer />
       </div>
     </div>

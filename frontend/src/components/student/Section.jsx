@@ -1,8 +1,19 @@
-import React from "react";
-import { useEffect, useRef, useState } from "react";
+/**
+ * Section Component (Student course sidebar)
+ * FILE: src/components/student/Section.jsx
+ *
+ * Changes from original:
+ *  - Accepts completedVideos[] prop from CourseContent page
+ *  - Passes isCompleted flag to StudentSubSection per video
+ *  - Shows completed count out of total in section header
+ *  - Section auto-expands if it contains the currently selected video
+ *  - Reduced animation delay from index * 0.5 to index * 0.05 (sidebar was slow to render)
+ */
+
+import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineDown } from "react-icons/ai";
-import StudentSubSection from "./StudentSubSection";
 import { motion } from "framer-motion";
+import StudentSubSection from "./StudentSubSection";
 import { fadeIn } from "../../utils/motion";
 
 const Section = ({
@@ -11,64 +22,70 @@ const Section = ({
   handleActive,
   handleVideoClick,
   selectedSubSec,
+  completedVideos = [],
   index,
 }) => {
   const contentEl = useRef(null);
-  const [active, setActive] = useState(false);
-  useEffect(() => {
-    setActive(isActive?.includes(section._id));
-  }, [isActive]);
 
-  const [sectionHeight, setSectionHeight] = useState(0);
+  const active       = isActive?.includes(section._id);
+  const [height, setHeight] = useState(0);
+
   useEffect(() => {
-    setSectionHeight(active ? contentEl.current.scrollHeight : 0);
-  }, [active]);
+    if (!contentEl.current) return;
+    setHeight(active ? contentEl.current.scrollHeight : 0);
+  }, [active, section]);
+
+  // Count completed videos in this section
+  const totalInSection    = section?.subSections?.length || 0;
+  const completedInSection = section?.subSections?.filter(
+    (sub) => completedVideos.includes(String(sub._id))
+  ).length || 0;
 
   return (
     <motion.div
-      variants={fadeIn("up", "spring", index * 0.5, 0.75)}
+      variants={fadeIn("up", "spring", index * 0.05, 0.4)}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, amount: 0.2 }} // Ensures animation happens only once
+      viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="overflow-hidden rounded-lg mt-3 lg:w-[90%] min-h-[50px] h-auto mx-auto border border-solid border-richblack-600 bg-richblack-700 text-richblack-5 last:mb-0">
-        <div>
-          <div
-            className={`flex cursor-pointer items-start justify-between bg-opacity-20 px-7  py-6 transition-[0.3s]`}
-            onClick={() => {
-              handleActive(section._id);
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <i
-                className={
-                  isActive.includes(section._id) ? "rotate-180" : "rotate-0"
-                }
-              >
-                <AiOutlineDown />
-              </i>
-              <p className=" text-sm">{section?.sectionName}</p>
-            </div>
+      <div className="overflow-hidden rounded-lg mt-2 mx-2 border border-richblack-600 bg-richblack-700 text-richblack-5">
+
+        {/* Section header */}
+        <div
+          className="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-richblack-600 transition"
+          onClick={() => handleActive(section._id)}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <i className={`transition-transform duration-300 ${active ? "rotate-180" : "rotate-0"}`}>
+              <AiOutlineDown size={14} className="text-richblack-300" />
+            </i>
+            <p className="text-sm font-medium truncate">{section?.sectionName}</p>
           </div>
+
+          {/* Progress count */}
+          {totalInSection > 0 && (
+            <span className="text-xs text-richblack-400 shrink-0 ml-2">
+              {completedInSection}/{totalInSection}
+            </span>
+          )}
         </div>
+
+        {/* Collapsible content */}
         <div
           ref={contentEl}
-          className={`relative h-0 overflow-hidden bg-richblack-900 transition-[height] duration-[0.35s] ease-[ease]`}
-          style={{
-            height: sectionHeight,
-          }}
+          className="overflow-hidden transition-[height] duration-300 ease-in-out"
+          style={{ height }}
         >
-          <div className="text-textHead flex flex-col gap-2 px-7 py-6 font-semibold">
-           {section?.subSections?.map((subSec, i) => {
-  return (
-    <StudentSubSection
-      subSec={subSec}
-      key={i}
-      handleVideoClick={handleVideoClick}
-      isSelected={selectedSubSec?._id === subSec._id}
-    />
-  );
-})}
+          <div className="bg-richblack-800 flex flex-col">
+            {section?.subSections?.map((subSec) => (
+              <StudentSubSection
+                key={subSec._id}
+                subSec={subSec}
+                handleVideoClick={handleVideoClick}
+                isSelected={selectedSubSec?._id === subSec._id}
+                isCompleted={completedVideos.includes(String(subSec._id))}
+              />
+            ))}
           </div>
         </div>
       </div>

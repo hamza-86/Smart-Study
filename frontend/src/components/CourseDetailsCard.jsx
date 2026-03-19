@@ -1,5 +1,5 @@
 import React from "react";
-import { BsFillCaretRightFill } from "react-icons/bs";
+
 import { FaShareSquare } from "react-icons/fa";
 import copy from "copy-to-clipboard";
 import { toast } from "react-hot-toast";

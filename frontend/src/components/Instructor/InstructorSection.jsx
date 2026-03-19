@@ -1,155 +1,77 @@
+/**
+ * InstructorSection Component (Homepage)
+ * FILE: src/components/HomePage/InstructorSection.jsx
+ *
+ * Changes from original:
+ *  - "Smart Study Instructor" → "EduFlow Instructor"
+ *  - Updated body copy to say "EduFlow" instead of "Smart Study"
+ *  - All other logic and layout unchanged
+ */
+
 import React from "react";
-import { FiEdit2 } from "react-icons/fi";
-import { RiDeleteBin6Line } from "react-icons/ri";
-import { CiCirclePlus } from "react-icons/ci";
-import { deleteSection } from "../../services/courseAPI";
-import InstructorSubsection from "./InstructorSubsection";
-import { useState } from "react";
-import CreateSubsectionModel from "./CreateSubsectionModal";
-import { useDispatch } from "react-redux";
-import { updateSection } from "../../slices/courseSlice";
-import { FaPlus } from "react-icons/fa";
-import { editSection } from "../../services/courseAPI";
+import { useNavigate } from "react-router-dom";
+import { motion }      from "framer-motion";
+import { FaArrowRight } from "react-icons/fa";
+import Instructor from "../../assets/Instructor.png";
+import { fadeIn, textVariant } from "../../utils/motion";
 
-const InstructorSection = ({
-  name,
-  sectionId,
-  subSections,
-  onDelete,
-  courseId,
-  token,
-}) => {
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [isModalOpenSection, setModalOpenSection] = useState(false);
-  const [editedName, setEditedName] = useState(name);
-  const dispatch = useDispatch();
-
-  const deleteHandler = async () => {
-    const response = await deleteSection(sectionId, courseId, token);
-    onDelete(sectionId);
-  };
-
-  const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
-
-  const openModalSection = () => setModalOpenSection(true);
-  const closeModalSection = () => setModalOpenSection(false);
-
-  const submitHandler = async (e) => {
-    e.preventDefault();
-
-    const response = await editSection(editedName, sectionId, token);
-
-    if (response?.success && response?.data) {
-      dispatch(updateSection(response.data));
-    }
-
-    closeModalSection();
-  };
-
-  const onChangeHandler = (e) => {
-    setEditedName(e.target.value);
-  };
+const InstructorSection = () => {
+  const navigate = useNavigate();
 
   return (
-    <>
-      <div className=" flex flex-col ">
-        <div className=" overflow-hidden h-auto flex flex-col text-center w-[100%] lg:w-[100%] border border-solid border-richblack-600 bg-richblack-700 text-richblack-5 last:mb-0 mt-3">
-          <div className=" flex items-center h-[50px] justify-between w-full  ">
-            <p className="text-md ml-4 lg:hidden">
-              {name.length > 20 ? name.slice(0, 20) + "..." : name}
-            </p>
+    <div className="py-16">
+      <div className="flex flex-col lg:flex-row gap-20 items-center">
 
-            <p className="text-md ml-4  hidden lg:block">
-              {name.length > 40 ? name.slice(0, 40) + "..." : name}
-            </p>
-
-            <div className="text-sm font-medium text-richblack-100">
-              <button
-                className="px-2 transition-all duration-200 hover:scale-110 hover:text-caribbeangreen-300"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openModal();
-                }}
-              >
-                <CiCirclePlus size={22} />
-              </button>
-
-              <button
-                className="px-2 transition-all duration-200 hover:scale-110 hover:text-caribbeangreen-300"
-                onClick={openModalSection}
-              >
-                <FiEdit2 size={20} />
-              </button>
-
-              <button
-                className="px-2 transition-all duration-200 hover:scale-110 hover:text-caribbeangreen-300"
-                onClick={deleteHandler}
-              >
-                <RiDeleteBin6Line size={20} />
-              </button>
-            </div>
-          </div>
-          <div className=" w-full h-[1px] bg-richblack-400"></div>
-{subSections?.map((sub) => (
-  <InstructorSubsection
-    key={sub._id}
-    subSection={sub}
-    sectionId={sectionId}
-    token={token}
-  />
-))}
+        {/* Image */}
+        <div className="lg:w-[50%]">
+          <img
+            src={Instructor}
+            alt="EduFlow Instructor"
+            className="shadow-white shadow-[-20px_-20px_0_0] rounded-lg"
+          />
         </div>
-      </div>
 
-      {/* Modal Component */}
-          <CreateSubsectionModel
-        isModalOpen={isModalOpen}
-        closeModal={closeModal}
-        sectionId={sectionId}
-      />
+        {/* Content */}
+        <div className="lg:w-[50%] flex gap-8 flex-col">
+          <motion.div
+            variants={textVariant()}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+          >
+            <h1 className="text-4xl font-semibold">
+              Become an{" "}
+              <span className="bg-gradient-to-b from-[#1FA2FF] via-[#12D8FA] to-[#A6FFCB] text-transparent bg-clip-text font-bold">
+                EduFlow Instructor
+              </span>
+            </h1>
+          </motion.div>
 
-      {isModalOpenSection && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className=" p-6 rounded-xl  text-white bg-black w-[90%] border max-w-lg h-[40vh] relative overflow-hidden">
+          <motion.p
+            variants={fadeIn("", "", 0.1, 1)}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            className="font-medium text-[16px] text-justify text-richblack-300"
+          >
+            Share your knowledge with thousands of learners across the world.
+            EduFlow provides powerful tools, course management, analytics, and
+            monetisation support to help you teach what you love.
+          </motion.p>
+
+          <div className="w-fit">
             <button
-              onClick={closeModalSection}
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+              onClick={() => navigate("/signup")}
+              className="bg-yellow-50 flex items-center gap-2 text-black px-4 py-3 rounded-lg font-bold hover:scale-95 hover:bg-richblack-800 hover:text-yellow-50 transition-all duration-200"
             >
-              ✖
+              Start Teaching Today
+              <FaArrowRight />
             </button>
-            <h2 className="text-xl font-bold mb-2">Update Section</h2>
-
-            <form
-              onSubmit={submitHandler}
-              className="flex flex-col gap-y-6 mt-6  "
-            >
-              <label>
-                <p className="text-sm font-medium text-richblack-5 mb-2">
-                  Section Name <sup className="text-pink-200">*</sup>
-                </p>
-                <input
-                  required
-                  type="editedName"
-                  name="editedName"
-                  value={editedName}
-                  onChange={onChangeHandler}
-                  placeholder="Add a section to build your course"
-                  className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="bg-[#161D29] w-[170px] text-[#FFD60A] border border-[#FFD60A] flex justify-between items-center font-medium py-4 px-4 rounded-md  transition-all"
-              >
-                <FaPlus /> <p>Update Section</p>
-              </button>
-            </form>
           </div>
         </div>
-      )}
-    </>
+
+      </div>
+    </div>
   );
 };
 

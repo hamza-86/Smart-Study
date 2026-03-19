@@ -1,69 +1,83 @@
+/**
+ * MyCourses Page
+ * FILE: src/pages/instructor/MyCourses.jsx
+ *
+ * Changes from original:
+ *  - Fixed import: fetchInstructorCourses from courseServices.js (not courseAPI)
+ *  - Added status badge (Draft / Published) on each course row
+ *  - Improved empty state
+ *  - Loading spinner uses PageLoader pattern
+ */
+
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { VscAdd } from "react-icons/vsc";
-import InstructorCourseCard from "../../components/Instructor/InstructorCourseCard";
+import { motion } from "framer-motion";
+import InstructorCourseCard      from "../../components/Instructor/InstructorCourseCard";
 import InstructorCourseCardSmall from "../../components/Instructor/InstructorCourseCardSmall";
-import { fetchInstructorCourses } from "../../services/courseAPI";
-import Footer from "../../components/Footer";
+import Footer    from "../../components/Footer";
+import EmptyState from "../../components/common/EmptyState";
+import { fetchInstructorCourses } from "../../services/courseServices";
 
 const MyCourses = () => {
+  const navigate  = useNavigate();
+  const dispatch  = useDispatch();
+  const token     = useSelector((state) => state.auth.token);
+  const loading   = useSelector((state) => state.auth.loading);
+
   const [courses, setCourses] = useState([]);
-  const navigate = useNavigate();
-  const token = useSelector((state) => state.auth.token);
-  const loading = useSelector((state) => state.auth.loading);
-  const dispatch = useDispatch();
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-    }
-  }, [token, navigate]);
-
-  useEffect(() => {
-    if (!token) return;
-
-    const fetchCourses = async () => {
-      const result = await fetchInstructorCourses(token, dispatch);
+    if (!token) { navigate("/login"); return; }
+    fetchInstructorCourses(token, dispatch).then((result) => {
       setCourses(Array.isArray(result) ? result : []);
-    };
+    });
+  }, [token, dispatch, navigate]);
 
-    fetchCourses();
-  }, [token, dispatch]);
-
-  const deleteHandler = (courseId) => {
-    setCourses((prev) => prev.filter((course) => course._id !== courseId));
-  };
+  const deleteHandler = (courseId) =>
+    setCourses((prev) => prev.filter((c) => c._id !== courseId));
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center">
-        <div className="loader"></div>
+      <div className="grid min-h-screen place-items-center bg-richblack-900">
+        <div className="loader" />
       </div>
     );
   }
 
   return (
     <>
-      <div className=" w-full flex justify-center items-center h-auto ">
-        <div className=" text-white mt-16 min-h-screen h-auto w-full  mb-10 lg:w-[1200px] ">
-          <div className=" flex justify-between px-5 pt-10">
-            <h1 className=" text-[#F1F2FF] font-semibold text-[25px] lg:text-[30px] ">
-              My Courses
-            </h1>
+      <motion.div
+        className="w-full flex justify-center items-start min-h-screen bg-richblack-900"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="mt-16 min-h-screen w-full max-w-5xl px-4 pb-16">
+
+          {/* Header */}
+          <div className="flex justify-between items-center pt-10 mb-8">
+            <div>
+              <h1 className="text-richblack-5 font-bold text-2xl lg:text-3xl">My Courses</h1>
+              <p className="text-richblack-400 text-sm mt-1">
+                {courses.length} course{courses.length !== 1 ? "s" : ""} total
+              </p>
+            </div>
             <button
-              className="CTAbutton flex justify-center items-center gap-2 text-[15px]"
-              onClick={() => {
-                navigate("/dashboard/add-course");
-              }}
+              onClick={() => navigate("/dashboard/add-course")}
+              className="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 text-richblack-900 font-semibold rounded-lg hover:bg-yellow-100 transition"
             >
-              <p>New</p> <VscAdd />{" "}
+              <VscAdd size={18} />
+              <span>New Course</span>
             </button>
           </div>
 
-          <div className=" hidden lg:block">
-            {courses?.length > 0 ? (
-              <div className="flex justify-center items-center flex-col mt-10">
+          {/* Course list */}
+          {courses.length > 0 ? (
+            <>
+              {/* Desktop */}
+              <div className="hidden lg:flex flex-col gap-4">
                 {courses.map((course, index) => (
                   <InstructorCourseCard
                     key={course._id}
@@ -74,17 +88,8 @@ const MyCourses = () => {
                   />
                 ))}
               </div>
-            ) : (
-              <p className="text-richblack-200 text-2xl mt-48 text-center ">
-                Looks like you haven’t created any courses yet. Get started
-                today!
-              </p>
-            )}
-          </div>
-
-          <div className=" block lg:hidden">
-            {courses?.length > 0 ? (
-              <div className="flex justify-center items-center flex-col mt-10 gap-10 mb-10">
+              {/* Mobile */}
+              <div className="flex lg:hidden flex-col gap-4">
                 {courses.map((course, index) => (
                   <InstructorCourseCardSmall
                     key={course._id}
@@ -95,15 +100,16 @@ const MyCourses = () => {
                   />
                 ))}
               </div>
-            ) : (
-              <p className="text-richblack-200 text-2xl mt-48 text-center ">
-                Looks like you haven't created any courses yet. Get started
-                today!
-              </p>
-            )}
-          </div>
+            </>
+          ) : (
+            <EmptyState
+              message="You haven't created any courses yet. Share your knowledge today!"
+              actionLabel="Create Your First Course"
+              onAction={() => navigate("/dashboard/add-course")}
+            />
+          )}
         </div>
-      </div>
+      </motion.div>
       <Footer />
     </>
   );

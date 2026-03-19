@@ -1,173 +1,143 @@
-import React from "react";
-import { useState } from "react";
-import { toast } from "react-hot-toast";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
-import Tab from "../components/Tab";
-import signupImage from "../assets/signupImage.png";
-import axios from "axios";
-import { endpoints } from "../services/api";
-import { setToken, setUser } from "../slices/authSlice";
-import { useDispatch } from "react-redux";
+/**
+ * Login Page
+ * FILE: src/pages/Login.jsx
+ *
+ * Changes from original:
+ *  - Uses login() from authServices (not raw axios)
+ *  - Response shape changed: accessToken + user (not token + user)
+ *  - Added "Forgot Password?" link
+ *  - Removed account type tab (login doesn't need it — backend detects from DB)
+ *  - Added form loading state
+ */
 
-const { LOGIN_API } = endpoints;
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { motion } from "framer-motion";
+import signupImage from "../assets/signupImage.png";
+import { login } from "../services/Authservices";
+
+const inputClass =
+  "w-full border border-richblack-600 bg-richblack-700 text-richblack-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-50 placeholder:text-richblack-400 transition";
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const ACCOUNT_TYPE = {
-    STUDENT: "Student",
-    INSTRUCTOR: "Instructor",
-    ADMIN: "Admin",
-  };
-
-  const [accountType, setAccountType] = useState(ACCOUNT_TYPE.STUDENT);
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const { email, password } = formData;
+  const handleChange = (e) =>
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleOnChange = (e) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleOnSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const toastId = toast.loading("Loading...");
-    try {
-      const response = await axios.post(LOGIN_API, {
-        email: email,
-        password: password,
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-
-      //console.log("response :>> ", response.data.user);
-
-      dispatch(setToken(response.data.token));
-      dispatch(setUser(response.data.user));
-
-      toast.success("Logged In");
-      navigate("/dashboard");
-    } catch (error) {
-      //console.log("error :>> ", error);
-      toast.error(error.response?.data?.message || "Login Failed");
-    }
-
-    toast.dismiss(toastId);
+    setLoading(true);
+    // login() from authServices handles toast, Redux dispatch, localStorage, and navigation
+    await login(formData.email, formData.password, navigate, dispatch);
+    setLoading(false);
   };
-
-  // data to pass to Tab component
-  const tabData = [
-    {
-      id: 1,
-      tabName: "Student",
-      type: ACCOUNT_TYPE.STUDENT,
-    },
-    {
-      id: 2,
-      tabName: "Instructor",
-      type: ACCOUNT_TYPE.INSTRUCTOR,
-    },
-  ];
 
   return (
-    <div className=" w-full min-h-screen lg:h-screen pt-24 lg:pt-10 bg-richblack-900 flex justify-center items-center lg:flex-row flex-col-reverse">
-      <div className="bg-richblack-900 p-6 rounded-lg shadow-lg max-w-lg mx-auto lg:w-[450px]">
-        <div className="mx-auto w-11/12 max-w-[450px] md:mx-0">
-          <h1 className="text-[1.875rem] font-semibold leading-[2.375rem] text-richblack-5">
-            Welcome Back
-          </h1>
-          <p className="mt-4 text-[1.125rem] leading-[1.625rem]">
-            <span className="text-richblack-100">Discover your passions,</span>{" "}
-            <span className="font-edu-sa font-bold italic text-blue-100">
-              Be Unstoppable
-            </span>
-          </p>
-        </div>
+    <div className="min-h-screen bg-richblack-900 flex items-center justify-center px-4 py-24 lg:py-10 flex-col-reverse lg:flex-row gap-10">
 
-        {/* Tab */}
-        <Tab tabData={tabData} field={accountType} setField={setAccountType} />
+      {/* Form */}
+      <motion.div
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-[420px]"
+      >
+        <h1 className="text-richblack-5 text-3xl font-bold mb-2">Welcome Back</h1>
+        <p className="text-richblack-300 text-sm mb-8">
+          Discover your passions.{" "}
+          <span className="italic text-blue-100 font-semibold">Be Unstoppable.</span>
+        </p>
 
-        {/*Heading */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-        {/* Form */}
-        <form onSubmit={handleOnSubmit} className="flex flex-col gap-y-6 mt-6">
           {/* Email */}
-          <label>
-            <p className="text-sm font-medium text-richblack-5 mb-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-richblack-5">
               Email Address <sup className="text-pink-200">*</sup>
-            </p>
+            </span>
             <input
               required
               type="email"
               name="email"
-              value={email}
-              onChange={handleOnChange}
+              value={formData.email}
+              onChange={handleChange}
               placeholder="Enter your email"
-              className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
+              className={inputClass}
             />
           </label>
 
-          {/* Password & Confirm Password */}
-          <div className="flex flex-col sm:flex-row gap-6">
-            {/* Password */}
-            <label className="relative w-full">
-              <p className="text-sm font-medium text-richblack-5 mb-2">
+          {/* Password */}
+          <label className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-richblack-5">
                 Password <sup className="text-pink-200">*</sup>
-              </p>
+              </span>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-blue-200 hover:text-yellow-50 transition"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
               <input
                 required
                 type={showPassword ? "text" : "password"}
                 name="password"
-                value={password}
-                onChange={handleOnChange}
-                placeholder="Enter password"
-                className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 pr-10 focus:ring-2 focus:ring-yellow-50"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className={`${inputClass} pr-10`}
               />
-              <span
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-10 text-gray-400 cursor-pointer hover:text-yellow-50"
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-richblack-400 hover:text-yellow-50 transition"
               >
-                {showPassword ? (
-                  <AiOutlineEyeInvisible fontSize={20} />
-                ) : (
-                  <AiOutlineEye fontSize={20} />
-                )}
-              </span>
-            </label>
-          </div>
+                {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+              </button>
+            </div>
+          </label>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
-            className="bg-yellow-50 text-richblack-900 font-medium py-2 px-4 rounded-md hover:bg-yellow-100 transition-all"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-yellow-50 text-richblack-900 font-bold hover:bg-yellow-100 transition disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
-            Log in
+            {loading ? "Signing in..." : "Sign In"}
           </button>
-        </form>
-      </div>
 
-      <div>
+          {/* Sign up link */}
+          <p className="text-center text-richblack-300 text-sm">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-yellow-50 font-medium hover:underline">
+              Sign up for free
+            </Link>
+          </p>
+        </form>
+      </motion.div>
+
+      {/* Image */}
+      <motion.div
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <img
           src={signupImage}
-          alt=""
-          width={600}
-          height={500}
-          className=" mr-20"
+          alt="Login"
+          className="w-full max-w-[520px]"
         />
-      </div>
+      </motion.div>
     </div>
   );
 };

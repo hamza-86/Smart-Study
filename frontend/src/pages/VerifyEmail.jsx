@@ -1,129 +1,128 @@
-import { useEffect, useState } from "react";
+/**
+ * VerifyEmail Page
+ * FILE: src/pages/VerifyEmail.jsx
+ *
+ * Changes from original:
+ *  - SIGNUP_API call now sends firstName/lastName instead of name
+ *  - Uses axiosInstance (not raw axios)
+ *  - Handles new response shape from backend
+ */
+
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { BiArrowBack } from "react-icons/bi";
 import { RxCountdownTimer } from "react-icons/rx";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import axios from "axios";
 import { toast } from "react-hot-toast";
+import axiosInstance from "../services/axiosInstance";
 import { endpoints } from "../services/api";
 
 const { SIGNUP_API, SENDOTP_API } = endpoints;
 
 const VerifyEmail = () => {
-  const [otp, setOtp] = useState(null);
-  const { signupData } = useSelector((state) => state.auth);
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
+  const signupData   = useSelector((state) => state.auth.signupData);
+
+  const [otp,     setOtp]     = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!signupData) {
-      navigate("/signup");
-    }
-  }, []);
+    if (!signupData) navigate("/signup");
+  }, [signupData, navigate]);
 
-  const handleOnSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const { accountType, name, email, password, confirmPassword } = signupData;
-
-    const toastId = toast.loading("Loading...");
+    setLoading(true);
+    const toastId = toast.loading("Verifying...");
     try {
-      const response = await axios.post(SIGNUP_API, {
-        email: email,
-        name: name,
-        accountType: accountType,
-        password: password,
-        confirmPassword: confirmPassword,
-        otp: otp,
+      // signupData now has firstName + lastName (not name)
+      const { accountType, firstName, lastName, email, password, confirmPassword } = signupData;
+
+      const response = await axiosInstance.post(SIGNUP_API, {
+        firstName,
+        lastName,
+        email,
+        accountType,
+        password,
+        confirmPassword,
+        otp,
       });
 
-      //console.log("response :>> ", response);
+      if (!response.data.success) throw new Error(response.data.message);
 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-
-      toast.success("Signup Successful");
+      toast.success("Account created! Please log in.");
       navigate("/login");
     } catch (error) {
-      //console.log("SIGNUP API ERROR............", error);
-      toast.error("Signup Failed");
+      toast.error(error.response?.data?.message || "Verification failed");
       navigate("/signup");
+    } finally {
+      toast.dismiss(toastId);
+      setLoading(false);
     }
-    toast.dismiss(toastId);
   };
 
-  const resendHandler = async () => {
-    const toastId = toast.loading("Loading...");
+  const resendOTP = async () => {
+    const toastId = toast.loading("Resending OTP...");
     try {
-      const response = await axios.post(SENDOTP_API, {
-        email: signupData.email,
+      const response = await axiosInstance.post(SENDOTP_API, {
+        email: signupData?.email,
       });
-      //console.log("response :>> ", response);
-
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-      toast.success("OTP Sent Successfully");
+      if (!response.data.success) throw new Error(response.data.message);
+      toast.success("OTP resent to your email");
     } catch (error) {
-      //console.log("SENDOTP API ERROR............", error.response || error); // Log the full error response
-      toast.error(error.response?.data?.message || "Could Not Send OTP");
+      toast.error(error.response?.data?.message || "Could not resend OTP");
+    } finally {
+      toast.dismiss(toastId);
     }
-
-    toast.dismiss(toastId);
   };
 
   return (
-    <div className="bg-richblack-900 h-screen flex justify-center items-center">
-      <div className="flex flex-col justify-center items-center w-full sm:w-[90%] md:w-[80%] lg:w-[400px] px-4">
-        <h1 className="text-richblack-5 font-semibold text-[1.875rem] leading-[2.375rem]">
-          Verify Email
-        </h1>
+    <div className="min-h-screen bg-richblack-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-[400px] flex flex-col gap-6">
 
-        <p className="text-[1.125rem] leading-[1.625rem] my-4 text-richblack-100 text-center">
-          A verification code has been sent to you. Enter the code below
-        </p>
+        <div>
+          <h1 className="text-richblack-5 font-bold text-2xl mb-2">Verify your email</h1>
+          <p className="text-richblack-300 text-sm">
+            A 6-digit OTP has been sent to{" "}
+            <span className="text-yellow-50">{signupData?.email}</span>.
+            Enter it below to verify your account.
+          </p>
+        </div>
 
-        <form
-          onSubmit={handleOnSubmit}
-          className="flex w-full flex-col gap-y-4"
-        >
-          <div className="flex gap-x-4">
-            <label className="w-full">
-              <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">
-                <sup className="text-pink-200">*</sup>
-              </p>
-              <input
-                required
-                type="text"
-                name="otp"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter OTP"
-                className="form-input w-full text-white border border-richblack-600 bg-richblack-700 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
-              />
-            </label>
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm text-richblack-5">
+              OTP <sup className="text-pink-200">*</sup>
+            </span>
+            <input
+              required
+              type="text"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              placeholder="Enter 6-digit OTP"
+              className="w-full border border-richblack-600 bg-richblack-700 text-richblack-100 rounded-lg px-4 py-3 text-center text-xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-yellow-50 placeholder:text-richblack-500 placeholder:tracking-normal"
+            />
+          </label>
+
           <button
             type="submit"
-            className="mt-6 rounded-[8px] bg-yellow-50 py-[8px] px-[12px] font-medium text-richblack-900"
+            disabled={loading || otp.length !== 6}
+            className="w-full py-3 rounded-lg bg-yellow-50 text-richblack-900 font-bold hover:bg-yellow-100 transition disabled:opacity-60"
           >
-            Verify Email
+            {loading ? "Verifying..." : "Verify Email"}
           </button>
         </form>
 
-        <div className="mt-6 flex items-center justify-between w-full text-sm">
-          <Link to="/signup">
-            <p className="text-richblack-5 flex items-center gap-x-2">
-              <BiArrowBack /> Back To Signup
-            </p>
+        <div className="flex items-center justify-between text-sm">
+          <Link to="/signup" className="flex items-center gap-2 text-richblack-300 hover:text-richblack-5 transition">
+            <BiArrowBack size={16} /> Back to Signup
           </Link>
           <button
-            className="flex items-center text-blue-100 gap-x-2"
-            onClick={resendHandler}
+            onClick={resendOTP}
+            className="flex items-center gap-1.5 text-blue-200 hover:text-yellow-50 transition"
           >
-            <RxCountdownTimer />
-            Resend it
+            <RxCountdownTimer size={16} /> Resend OTP
           </button>
         </div>
       </div>

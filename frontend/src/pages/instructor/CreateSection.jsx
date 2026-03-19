@@ -1,53 +1,77 @@
+/**
+ * CreateSection Page
+ * FILE: src/pages/instructor/CreateSection.jsx
+ *
+ * Changes from original:
+ *  - Fixed import: createSection now from courseServices.js (not courseAPI)
+ *  - Response shape changed: service now returns data directly (not response.data)
+ *  - createSection now dispatches properly using the returned section object
+ */
+
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { MdDone } from "react-icons/md";
 import { FaPlus } from "react-icons/fa";
-import { createSection } from "../../services/courseAPI";
-import { useNavigate } from "react-router-dom";
+import { MdNavigateNext } from "react-icons/md";
 import toast from "react-hot-toast";
 import InstructorSection from "../../components/Instructor/InstructorSection";
 import { removeSection, setSections } from "../../slices/courseSlice";
-import { MdNavigateNext } from "react-icons/md";
+import { createSection } from "../../services/courseServices";
 
+// ── Step indicator (same as AddCourse) ───────────────────────────────────────
+const StepBadge = ({ step, current, done }) => {
+  const isDone   = done || step < current;
+  const isActive = step === current;
+  return (
+    <div
+      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all
+        ${isDone   ? "bg-yellow-50 border-yellow-50 text-richblack-900"             : ""}
+        ${isActive ? "bg-[#251400] border-yellow-50 text-yellow-50"                 : ""}
+        ${!isDone && !isActive ? "bg-richblack-800 border-richblack-600 text-richblack-400" : ""}
+      `}
+    >
+      {isDone ? <MdDone size={18} /> : step}
+    </div>
+  );
+};
+
+const StepConnector = ({ done }) => (
+  <div className={`flex-1 h-0.5 border-t-2 border-dashed transition-colors ${done ? "border-yellow-50" : "border-richblack-600"}`} />
+);
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const CreateSection = () => {
+  const dispatch      = useDispatch();
+  const navigate      = useNavigate();
+  const token         = useSelector((state) => state.auth.token);
   const courseDetails = useSelector((state) => state.course.course);
-  const token = useSelector((state) => state.auth.token);
-  const sections = useSelector((state) => state.course.sections);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const sections      = useSelector((state) => state.course.sections);
 
-  const [section, setSection] = useState({
-    sectionName: "",
-  });
-
-  const { sectionName } = section;
+  const [sectionName, setSectionName] = useState("");
+  const [submitting,  setSubmitting]  = useState(false);
 
   useEffect(() => {
-    if (courseDetails === null) {
-      toast.error("Enter Course Details");
+    if (!courseDetails) {
+      toast.error("Please fill in course details first");
       navigate("/dashboard/add-course");
-      return;
     }
   }, [courseDetails, navigate]);
 
   const courseId = courseDetails?._id;
 
-  const onChangeHandler = (e) => {
-    setSection((prevData) => ({
-      ...prevData,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const submitHandler = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!sectionName.trim()) return;
+    setSubmitting(true);
 
-    const response = await createSection(sectionName, courseId, token);
+    // createSection returns the section object directly (not wrapped in response.data)
+    const newSection = await createSection(sectionName.trim(), courseId, token);
+    setSubmitting(false);
 
-    if (response?.success && response?.data) {
-      dispatch(setSections([...(sections || []), response.data]));
-
-      setSection({ sectionName: "" });
+    if (newSection) {
+      dispatch(setSections([...(sections || []), newSection]));
+      setSectionName("");
     }
   };
 
@@ -56,34 +80,33 @@ const CreateSection = () => {
   };
 
   return (
-    <div className=" min-h-screen flex flex-col h-auto pt-20 mt-12 mx-auto w-[90%]     gap-5  ">
-      <div className=" flex items-center  mx-auto w-[90%] lg:w-[50%]  lg:pl-28 ">
-        <div className=" flex flex-col">
-          <div className=" w-[40px] h-[40px] rounded-full bg-[#FFD60A] border border-[#251400] text-richblack-900 text-[25px] flex justify-center items-center">
-            <MdDone />
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col pt-20 mt-10 pb-16 px-4 bg-richblack-900">
 
-        <div className="w-[33%] border-dashed border-b-2 border-[#FFD60A]"></div>
-
-        <div className=" w-[40px] h-[40px] rounded-full bg-[#251400] border border-[#FFD60A] text-[#FFD60A] text-[18px] flex justify-center items-center">
-          2
-        </div>
-        <div className="w-[33%] border-dashed border-b-2 border-[#424854]"></div>
-        <div className=" w-[40px] h-[40px] rounded-full bg-[#161D29] border border-[#2C333F] text-[#838894] text-[18px] flex justify-center items-center">
-          3
-        </div>
+      {/* Step Indicator */}
+      <div className="flex items-center w-full max-w-xs mx-auto mb-10">
+        <StepBadge step={1} current={2} />
+        <StepConnector done />
+        <StepBadge step={2} current={2} />
+        <StepConnector />
+        <StepBadge step={3} current={2} />
       </div>
 
-      <div className=" flex  justify-center gap-4 mt-14  ">
-        <div className="w-[98%] lg:w-[40%]   min-h-[400px] h-auto">
-          <h1 className=" text-[#F1F2FF] font-semibold text-[24px]">
-            Course Builder
-          </h1>
+      {/* Content */}
+      <div className="flex justify-center gap-6 flex-wrap">
 
-          <div>
-            {sections.length > 0 &&
-              sections.map((sec) => (
+        {/* Main panel */}
+        <div className="w-full max-w-xl bg-richblack-800 rounded-2xl p-6 shadow-lg min-h-[400px]">
+          <h2 className="text-richblack-5 text-xl font-semibold mb-2">
+            Course Builder
+          </h2>
+          <p className="text-richblack-400 text-sm mb-6">
+            Organise your content into sections and lectures
+          </p>
+
+          {/* Existing sections */}
+          {sections?.length > 0 && (
+            <div className="flex flex-col gap-3 mb-6">
+              {sections.map((sec) => (
                 <InstructorSection
                   key={sec._id}
                   sectionId={sec._id}
@@ -94,65 +117,66 @@ const CreateSection = () => {
                   token={token}
                 />
               ))}
-          </div>
+            </div>
+          )}
 
-          <form
-            onSubmit={submitHandler}
-            className="flex flex-col gap-y-6 mt-6  "
-          >
-            <label>
-              <p className="text-sm font-medium text-richblack-5 mb-2">
+          {/* Add section form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium text-richblack-5">
                 Section Name <sup className="text-pink-200">*</sup>
               </p>
               <input
                 required
-                type="sectionName"
-                name="sectionName"
+                type="text"
                 value={sectionName}
-                onChange={onChangeHandler}
-                placeholder="Add a section to build your course"
-                className="form-input w-full border border-richblack-600 bg-richblack-700 text-richblack-200 rounded-md px-4 py-2 focus:ring-2 focus:ring-yellow-50"
+                onChange={(e) => setSectionName(e.target.value)}
+                placeholder="e.g. Introduction to React"
+                className="w-full border border-richblack-600 bg-richblack-700 text-richblack-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-50 placeholder:text-richblack-400 transition"
               />
             </label>
 
-           <div className=" flex justify-between">
-           <button
-              type="submit"
-              className="bg-[#161D29] w-[170px] text-[#FFD60A] border border-[#FFD60A] flex justify-between items-center  font-medium py-4 px-4 rounded-md  transition-all"
-            >
-              <FaPlus /> <p>Create Section</p>
-            </button>
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex items-center gap-2 bg-richblack-900 text-yellow-50 border border-yellow-50 font-medium py-2.5 px-5 rounded-lg hover:bg-richblack-700 transition disabled:opacity-60"
+              >
+                <FaPlus size={14} />
+                <span>{submitting ? "Adding..." : "Add Section"}</span>
+              </button>
 
-            <button
-              
-              className="bg-[#161D29] w-[100px] text-[#FFD60A] border border-[#FFD60A] flex justify-between items-center h-[50px] font-medium py-4 px-4 rounded-md  transition-all"
-              onClick={()=> navigate("/dashboard/publish-course")}
-            >
-              <p>Next</p> <MdNavigateNext />
-            </button>
-           </div>
-
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard/publish-course")}
+                className="flex items-center gap-2 bg-yellow-50 text-richblack-900 font-semibold py-2.5 px-5 rounded-lg hover:bg-yellow-100 transition"
+              >
+                <span>Continue</span>
+                <MdNavigateNext size={20} />
+              </button>
+            </div>
           </form>
         </div>
 
-        <div className=" w-[400px] ml-20 rounded-2xl h-[350px] p-5 bg-richblack-800 hidden lg:block">
-          <h1 className=" text-white font-semibold text-xl">
-            ⚡Course Upload Tips
-          </h1>
-          <p className=" text-richblack-100  pl-5 text-[15px] ">
-            ‣ Set the Course Price option or make it free.
-            <br /> ‣ Standard size for the course thumbnail is 1024x576. <br />‣
-            Video section controls the course overview video.
-            <br />‣ Course Builder is where you create & organize a course.{" "}
-            <br />
-            ‣ Add Topics in the Course Builder section to create lessons,
-            quizzes, and assignments.
-            <br />‣ Information from the Additional Data section shows up on the
-            course single page.
-            <br />‣ Make Announcements to notify any important
-            <br />‣ Notes to all enrolled students at once.
-          </p>
+        {/* Tips sidebar */}
+        <div className="hidden lg:block w-80 bg-richblack-800 rounded-2xl p-5 h-fit sticky top-24">
+          <h3 className="text-white font-semibold text-lg mb-3">⚡ Course Builder Tips</h3>
+          <ul className="text-richblack-200 text-sm space-y-2 leading-relaxed">
+            {[
+              "Group related lessons into sections.",
+              "Use clear section names like 'Module 1: Basics'.",
+              "Add videos, quizzes, and notes to each section.",
+              "You can reorder sections after creating them.",
+              "Students see section names in the course outline.",
+            ].map((tip, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-yellow-50 mt-0.5">›</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+
       </div>
     </div>
   );

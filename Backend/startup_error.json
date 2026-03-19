@@ -1,0 +1,12 @@
+{
+  "code": "MODULE_NOT_FOUND",
+  "message": "Cannot find module '../models/Coupon'\nRequire stack:\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\services\\payment.service.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\controllers\\payment.controller.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\routes\\payment.routes.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\index.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\test_startup.js",
+  "stack": "Error: Cannot find module '../models/Coupon'\nRequire stack:\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\services\\payment.service.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\controllers\\payment.controller.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\routes\\payment.routes.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\index.js\n- C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\test_startup.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)\n    at Function._load (node:internal/modules/cjs/loader:1211:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.require (node:internal/modules/cjs/loader:1487:12)\n    at require (node:internal/modules/helpers:135:16)\n    at Object.<anonymous> (C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\services\\payment.service.js:16:16)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)",
+  "requireStack": [
+    "C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\services\\payment.service.js",
+    "C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\controllers\\payment.controller.js",
+    "C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\routes\\payment.routes.js",
+    "C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\index.js",
+    "C:\\Users\\hamza\\Desktop\\personal\\Projects\\Smart-Study\\Backend\\test_startup.js"
+  ]
+}

@@ -32,7 +32,7 @@ const Footer = () => {
             <div className="w-[30%] flex flex-col gap-3 lg:w-[30%] mb-7 lg:pl-0">
               <div className=" flex items-center gap-2">
               <img src={Logo} alt="" className="object-contain lg:w-8 w-7 " />
-              <p className=" lg:text-xl text-lg font-semibold text-white">SmartLearn</p>
+              <p className=" lg:text-xl text-lg font-semibold text-white">Smart Study</p>
               </div>
               <h1 className="text-richblack-50 font-semibold text-[16px]">
                 Company
@@ -175,7 +175,7 @@ const Footer = () => {
             })}
           </div>
 
-          <div className="text-center">Made by Mohd Huzaif © 2025 SmartLearn</div>
+          <div className="text-center">Made by Mohd HamzaMemon © 2026 Smart Study</div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@
  * FILE: src/pages/Home.jsx
  *
  * Changes from original:
- *  - "SmartLearn" branding references replaced with "EduFlow"
+ *  - "Smart Study" branding references replaced with "EduFlow"
  *  - CTA buttons now go to /allCourses (not /login) — public can browse
  *  - Added useSelector to show different CTA text if already logged in
  */

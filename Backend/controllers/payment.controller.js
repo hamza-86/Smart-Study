@@ -20,12 +20,17 @@ const { validateRequired, validateArray } = require("../utils/validators");
  */
 exports.capturePayment = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { courseIds } = req.body;
+  const { courseIds, courses, couponCode } = req.body;
+  const normalizedCourseIds = Array.isArray(courseIds)
+    ? courseIds
+    : Array.isArray(courses)
+    ? courses
+    : null;
 
-  validateRequired(courseIds, "Course IDs");
-  validateArray(courseIds, "courseIds");
+  validateRequired(normalizedCourseIds, "Course IDs");
+  validateArray(normalizedCourseIds, "courseIds");
 
-  const result = await createPaymentOrder(userId, courseIds);
+  const result = await createPaymentOrder(userId, normalizedCourseIds, couponCode || null);
 
   res
     .status(HTTP_STATUS.OK)
@@ -37,20 +42,37 @@ exports.capturePayment = asyncHandler(async (req, res) => {
  */
 exports.verifyPayment = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseIds } =
-    req.body;
-
-  validateRequired(razorpay_order_id, "Order ID");
-  validateRequired(razorpay_payment_id, "Payment ID");
-  validateRequired(razorpay_signature, "Signature");
-  validateRequired(courseIds, "Course IDs");
-  validateArray(courseIds, "courseIds");
-
-  await verifyPayment({
+  const {
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
+    orderId,
+    paymentId,
+    signature,
     courseIds,
+    courses,
+  } = req.body;
+
+  const normalizedOrderId = razorpay_order_id || orderId;
+  const normalizedPaymentId = razorpay_payment_id || paymentId;
+  const normalizedSignature = razorpay_signature || signature;
+  const normalizedCourseIds = Array.isArray(courseIds)
+    ? courseIds
+    : Array.isArray(courses)
+    ? courses
+    : null;
+
+  validateRequired(normalizedOrderId, "Order ID");
+  validateRequired(normalizedPaymentId, "Payment ID");
+  validateRequired(normalizedSignature, "Signature");
+  validateRequired(normalizedCourseIds, "Course IDs");
+  validateArray(normalizedCourseIds, "courseIds");
+
+  await verifyPayment({
+    razorpay_order_id: normalizedOrderId,
+    razorpay_payment_id: normalizedPaymentId,
+    razorpay_signature: normalizedSignature,
+    courseIds: normalizedCourseIds,
     userId,
   });
 

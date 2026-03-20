@@ -1,123 +1,120 @@
-/**
- * Buy Course Service
- * FILE: src/services/buyCourse.js
- *
- * Handles purchasing courses (paid) and enrolling in free courses
- */
+import { toast } from "react-hot-toast";
+import { endpoints } from "./api";
+import axiosInstance from "./axiosInstance";
 
-import axios from "axios";
+const { COURSE_PAYMENT_API, COURSE_VERIFY_API, ENROLL_FREE_API } = endpoints;
 
-const BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:4000/api/v1";
-
-/**
- * Handle buying paid courses
- * Initiates payment process via Razorpay or similar
- */
-export const BuyCourse = async (token, courseIds, user, navigate) => {
-  try {
-    // Call backend to create order
-    const response = await axios.post(
-      `${BASE_URL}/payments/createOrder`,
-      { courseIds },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response?.data?.success) {
-      const { orderId, amount, currency } = response.data.data;
-
-      // Initialize Razorpay
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY,
-        amount: amount * 100, // Convert to paise
-        currency: currency || "INR",
-        order_id: orderId,
-        name: "Smart Study",
-        description: "Course Purchase",
-        image: "/logo.png",
-        handler: async (paymentResponse) => {
-          try {
-            // Verify payment on backend
-            const verifyResponse = await axios.post(
-              `${BASE_URL}/payments/verifyOrder`,
-              {
-                orderId: paymentResponse.razorpay_order_id,
-                paymentId: paymentResponse.razorpay_payment_id,
-                signature: paymentResponse.razorpay_signature,
-                courseIds,
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-
-            if (verifyResponse?.data?.success) {
-              alert("Course purchased successfully!");
-              navigate("/dashboard/enrolled-courses");
-            } else {
-              alert("Payment verification failed. Please contact support.");
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error);
-            alert("An error occurred during payment verification.");
-          }
-        },
-        prefill: {
-          name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
-          email: user?.email,
-        },
-        theme: {
-          color: "#2D3436",
-        },
-      };
-
-      const razorpayWindow = new window.Razorpay(options);
-      razorpayWindow.open();
-    } else {
-      alert(response?.data?.message || "Failed to create order");
+const loadScript = (src) =>
+  new Promise((resolve) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve(true);
+      return;
     }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
+export const BuyCourse = async (_token, courseIds, user, navigate) => {
+  const toastId = toast.loading("Processing payment...");
+  try {
+    const sdkLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+    if (!sdkLoaded) {
+      toast.error("Failed to load payment SDK. Check your internet connection.");
+      return;
+    }
+
+    const key = process.env.REACT_APP_RAZORPAY_KEY;
+    if (!key) {
+      toast.error("Payment key is missing. Add REACT_APP_RAZORPAY_KEY in frontend .env.");
+      return;
+    }
+
+    const orderResponse = await axiosInstance.post(COURSE_PAYMENT_API, { courseIds });
+    if (!orderResponse?.data?.success) {
+      throw new Error(orderResponse?.data?.message || "Failed to create order");
+    }
+
+    const { isFree, order, amount, currency } = orderResponse.data.data || {};
+
+    if (isFree) {
+      toast.dismiss(toastId);
+      await enrollFreeCourse(courseIds[0], navigate);
+      return;
+    }
+
+    if (!order?.id) {
+      throw new Error("Invalid payment order from server");
+    }
+
+    const options = {
+      key,
+      amount: order.amount || Math.round((amount || 0) * 100),
+      currency: currency || "INR",
+      order_id: order.id,
+      name: "Smart Study",
+      description: "Course Purchase",
+      handler: async (paymentResponse) => {
+        try {
+          const verifyResponse = await axiosInstance.post(COURSE_VERIFY_API, {
+            razorpay_order_id: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+            courseIds,
+          });
+
+          if (!verifyResponse?.data?.success) {
+            throw new Error(verifyResponse?.data?.message || "Payment verification failed");
+          }
+
+          toast.success("Payment successful. Course unlocked.");
+          navigate("/dashboard/enrolled-courses");
+        } catch (error) {
+          console.error("Payment verification error:", error);
+          toast.error(
+            error?.response?.data?.message ||
+              "Payment verification failed. If amount was deducted, contact support."
+          );
+        }
+      },
+      prefill: {
+        name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+        email: user?.email || "",
+      },
+      theme: { color: "#FACC15" },
+    };
+
+    const razorpayWindow = new window.Razorpay(options);
+    razorpayWindow.open();
+    razorpayWindow.on("payment.failed", () => {
+      toast.error("Payment failed. Please try again.");
+    });
   } catch (error) {
     console.error("Buy course error:", error);
-    alert(error?.response?.data?.message || "An error occurred while processing your purchase.");
+    toast.error(error?.response?.data?.message || error?.message || "Purchase failed");
+  } finally {
+    toast.dismiss(toastId);
   }
 };
 
-/**
- * Enroll in free course
- */
 export const enrollFreeCourse = async (courseId, navigate) => {
+  const toastId = toast.loading("Enrolling...");
   try {
-    const token = localStorage.getItem("token");
+    const response = await axiosInstance.post(ENROLL_FREE_API, { courseId });
 
-    const response = await axios.post(
-      `${BASE_URL}/courses/enrollFreeCourse`,
-      { courseId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response?.data?.success) {
-      alert("Enrolled in course successfully!");
-      navigate(`/dashboard/course-content/${courseId}`);
-    } else {
-      alert(response?.data?.message || "Failed to enroll in course");
+    if (!response?.data?.success) {
+      throw new Error(response?.data?.message || "Failed to enroll");
     }
+
+    toast.success("Enrolled successfully.");
+    navigate(`/dashboard/course-content/${courseId}`);
   } catch (error) {
     console.error("Free course enrollment error:", error);
-    alert(
-      error?.response?.data?.message || "An error occurred while enrolling in the course."
-    );
+    toast.error(error?.response?.data?.message || "Enrollment failed");
+  } finally {
+    toast.dismiss(toastId);
   }
 };
 

@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineDown } from "react-icons/ai";
 import SubSection from "../components/SubSection";
 import { motion } from "framer-motion";
@@ -8,13 +7,17 @@ import { fadeIn } from "../utils/motion";
 const Section = ({ course, isActive, handleActive, index }) => {
   const contentEl = useRef(null);
   const [active, setActive] = useState(false);
+  const subSections = Array.isArray(course?.subSections) ? course.subSections : [];
+  const isSectionActive = Array.isArray(isActive) && isActive.includes(course?._id);
+
   useEffect(() => {
-    setActive(isActive?.includes(course._id));
-  }, [isActive]);
+    setActive(isSectionActive);
+  }, [isSectionActive]);
 
   const [sectionHeight, setSectionHeight] = useState(0);
   useEffect(() => {
-    setSectionHeight(active ? contentEl.current.scrollHeight : 0);
+    const nextHeight = active && contentEl.current ? contentEl.current.scrollHeight : 0;
+    setSectionHeight(nextHeight);
   }, [active]);
 
   return (
@@ -35,7 +38,7 @@ const Section = ({ course, isActive, handleActive, index }) => {
             <div className="flex items-center gap-2">
               <i
                 className={
-                  isActive.includes(course._id) ? "rotate-180" : "rotate-0"
+                  isSectionActive ? "rotate-180" : "rotate-0"
                 }
               >
                 <AiOutlineDown />
@@ -44,7 +47,7 @@ const Section = ({ course, isActive, handleActive, index }) => {
             </div>
             <div className="space-x-4">
               <span className="text-yellow-25">
-                {`${course.subSection.length || 0} lecture(s)`}
+                {`${subSections.length} lecture(s)`}
               </span>
             </div>
           </div>
@@ -57,7 +60,7 @@ const Section = ({ course, isActive, handleActive, index }) => {
           }}
         >
           <div className="text-textHead flex flex-col gap-2 px-7 py-6 ">
-            {course?.subSection?.map((subSec, i) => {
+            {subSections.map((subSec, i) => {
               return <SubSection subSec={subSec} key={i} />;
             })}
           </div>

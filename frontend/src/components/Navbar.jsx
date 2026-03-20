@@ -24,7 +24,7 @@ const Navbar = () => {
             <Link to="/">
               <div className="flex items-center gap-2">
                 <img src={logo} alt="Logo" className="object-contain lg:w-8 w-7" />
-                <p className="lg:text-xl text-lg font-semibold text-white">SmartLearn</p>
+                <p className="lg:text-xl text-lg font-semibold text-white">Smart Study</p>
               </div>
             </Link>
           </div>

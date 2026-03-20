@@ -34,7 +34,7 @@ const EditCourse = () => {
     if (!token) { navigate("/login"); return; }
     if (!courseId) { navigate("/dashboard/my-courses"); return; }
     
-    fetchCourseDetails(courseId, token, dispatch).then((result) => {
+    fetchCourseDetails(courseId, dispatch).then((result) => {
       if (result) {
         setCourse(result);
         setFormData({

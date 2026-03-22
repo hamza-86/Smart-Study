@@ -36,6 +36,8 @@ export const endpoints = {
   // ── Courses (public browse) ─────────────────────────────────────────────────
   GET_ALL_COURSES_API: `${BASE_URL}/courses/getAllCourses`,
   GET_COURSE_DETAILS:  (courseId) => `${BASE_URL}/courses/getCourseDetails/${courseId}`,
+  GET_INSTRUCTOR_COURSE_DETAILS: (courseId) => `${BASE_URL}/courses/${courseId}/details`,
+  GET_COURSE_STUDENTS: (courseId) => `${BASE_URL}/courses/${courseId}/students`,
 
   // ── Courses (enrolled — student must be logged in) ──────────────────────────
   GET_ENROLLED_COURSES:     `${BASE_URL}/payments/getEnrolledCourses`,
@@ -43,7 +45,7 @@ export const endpoints = {
 
   // ── Courses (instructor management) ────────────────────────────────────────
   CREATE_COURSE_API:        `${BASE_URL}/courses/createCourse`,
-  GET_INSTRUCTOR_COURSES:   `${BASE_URL}/courses/getInstructorCourses`,
+  GET_INSTRUCTOR_COURSES:   `${BASE_URL}/courses/instructor`,
   EDIT_COURSE_API:      (courseId) => `${BASE_URL}/courses/editCourse/${courseId}`,
   DELETE_COURSE_API:    (courseId) => `${BASE_URL}/courses/deleteCourse/${courseId}`,
   PUBLISH_COURSE_API:   (courseId) => `${BASE_URL}/courses/publishCourse/${courseId}`,
@@ -55,13 +57,17 @@ export const endpoints = {
 
   // ── Sections ────────────────────────────────────────────────────────────────
   ADD_SECTION_API:          `${BASE_URL}/courses/createSection`,
+  ADD_SECTION_V2_API:       `${BASE_URL}/sections`,
   UPDATE_SECTION_API:   (sectionId) => `${BASE_URL}/courses/updateSection/${sectionId}`,
-  DELETE_SECTION_API:       `${BASE_URL}/courses/deleteSection`,   // sectionId + courseId in body
+  UPDATE_SECTION_V2_API:(sectionId) => `${BASE_URL}/sections/${sectionId}`,
+  DELETE_SECTION_API:   (sectionId) => `${BASE_URL}/sections/${sectionId}`,
 
   // ── SubSections (lectures) ──────────────────────────────────────────────────
   CREATE_SUBSECTION_API:    `${BASE_URL}/courses/createSubSection`,
+  CREATE_SUBSECTION_V2_API: `${BASE_URL}/subsections`,
   UPDATE_SUBSECTION_API:(subSectionId) => `${BASE_URL}/courses/updateSubSection/${subSectionId}`,
-  DELETE_SUBSECTION_API:    `${BASE_URL}/courses/deleteSubSection`, // subSectionId + sectionId in body
+  UPDATE_SUBSECTION_V2_API:(subSectionId) => `${BASE_URL}/subsections/${subSectionId}`,
+  DELETE_SUBSECTION_API:(subSectionId) => `${BASE_URL}/subsections/${subSectionId}`,
 
   // ── Quiz ────────────────────────────────────────────────────────────────────
   CREATE_QUIZ_API:          `${BASE_URL}/courses/quiz`,

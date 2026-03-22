@@ -17,7 +17,8 @@ const createSection = async (courseId, instructorId, sectionData) => {
   session.startTransaction();
 
   try {
-    const { sectionName, description, order } = sectionData;
+    const sectionName = sectionData.sectionName || sectionData.title;
+    const { description, order } = sectionData;
 
     if (!sectionName?.trim()) {
       throw APIError.validation("Section name is required");
@@ -102,8 +103,9 @@ const updateSection = async (sectionId, instructorId, sectionData) => {
       throw APIError.authorization("Not authorized to update this section");
     }
 
-    if (sectionData.sectionName !== undefined) {
-      section.sectionName = sectionData.sectionName.trim();
+    const nextName = sectionData.sectionName || sectionData.title;
+    if (nextName !== undefined) {
+      section.sectionName = nextName.trim();
     }
     if (sectionData.description !== undefined) {
       section.description = sectionData.description.trim();

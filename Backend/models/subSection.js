@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const subSectionSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ["video", "image", "note", "notes", "quiz"],
+      default: "video",
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -19,7 +25,6 @@ const subSectionSchema = new mongoose.Schema(
     // -- Video --------------------------------------------------
     videoUrl: {
       type: String,
-      required: true,
     },
     videoPublicId: {
       // Cloudinary / S3 key for deletion
@@ -29,13 +34,21 @@ const subSectionSchema = new mongoose.Schema(
     timeDuration: {
       // in seconds
       type: Number,
-      required: true,
       default: 0,
     },
     isPreview: {
       // free preview lecture viewable without enrollment
       type: Boolean,
       default: false,
+    },
+
+    // -- Generic content ----------------------------------------
+    contentUrl: {
+      type: String,
+    },
+    textContent: {
+      type: String,
+      default: "",
     },
 
     // -- Attachments / Notes ------------------------------------

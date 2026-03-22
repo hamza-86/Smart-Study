@@ -9,7 +9,7 @@
  *  - Loading spinner uses PageLoader pattern
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { VscAdd } from "react-icons/vsc";
@@ -28,15 +28,19 @@ const MyCourses = () => {
 
   const [courses, setCourses] = useState([]);
 
+  const loadCourses = useCallback(async () => {
+    const result = await fetchInstructorCourses(token, dispatch);
+    setCourses(Array.isArray(result) ? result : []);
+  }, [token, dispatch]);
+
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
-    fetchInstructorCourses(token, dispatch).then((result) => {
-      setCourses(Array.isArray(result) ? result : []);
-    });
-  }, [token, dispatch, navigate]);
+    loadCourses();
+  }, [token, navigate, loadCourses]);
 
-  const deleteHandler = (courseId) =>
-    setCourses((prev) => prev.filter((c) => c._id !== courseId));
+  const deleteHandler = () => {
+    loadCourses();
+  };
 
   if (loading) {
     return (

@@ -14,6 +14,8 @@ import { setLoading } from "../slices/authSlice";
 const {
   GET_ALL_COURSES_API,
   GET_COURSE_DETAILS,
+  GET_INSTRUCTOR_COURSE_DETAILS,
+  GET_COURSE_STUDENTS,
   CREATE_COURSE_API,
   GET_INSTRUCTOR_COURSES,
   EDIT_COURSE_API,
@@ -22,9 +24,13 @@ const {
   GET_ALL_CATEGORIES,
   GET_CATEGORY_DETAILS,
   ADD_SECTION_API,
+  ADD_SECTION_V2_API,
+  UPDATE_SECTION_V2_API,
   UPDATE_SECTION_API,
   DELETE_SECTION_API,
   CREATE_SUBSECTION_API,
+  CREATE_SUBSECTION_V2_API,
+  UPDATE_SUBSECTION_V2_API,
   UPDATE_SUBSECTION_API,
   DELETE_SUBSECTION_API,
   GET_ENROLLED_COURSES,
@@ -103,7 +109,7 @@ export const fetchEnrolledCourse = async (courseId, token, dispatch) => {
   if (dispatch) dispatch(setLoading(true));
   const toastId = toast.loading("Loading...");
   try {
-    const response = await axiosInstance.get(GET_COURSE_CONTENT(courseId));
+    const response = await axiosInstance.get(GET_INSTRUCTOR_COURSE_DETAILS(courseId));
     return {
       status: 200,
       data: { data: { courseDetails: response.data.data } },
@@ -170,7 +176,7 @@ export const fetchInstructorCourses = async (token, dispatch) => {
   const toastId = toast.loading("Loading your courses...");
   try {
     const response = await axiosInstance.get(GET_INSTRUCTOR_COURSES);
-    return response.data.data || [];
+    return Array.isArray(response.data?.data) ? response.data.data : [];
   } catch (error) {
     toast.error(error.response?.data?.message || "Could not fetch courses");
     return [];
@@ -236,8 +242,8 @@ export const togglePublishCourse = async (courseId) => {
 export const createSection = async (sectionName, courseId, token) => {
   const toastId = toast.loading("Adding section...");
   try {
-    const response = await axiosInstance.post(ADD_SECTION_API, {
-      sectionName,
+    const response = await axiosInstance.post(ADD_SECTION_V2_API, {
+      title: sectionName,
       courseId,
     });
     toast.success("Section added successfully");
@@ -253,8 +259,8 @@ export const createSection = async (sectionName, courseId, token) => {
 export const editSection = async (sectionName, sectionId, token) => {
   const toastId = toast.loading("Updating section...");
   try {
-    const response = await axiosInstance.put(UPDATE_SECTION_API(sectionId), {
-      sectionName,
+    const response = await axiosInstance.put(UPDATE_SECTION_V2_API(sectionId), {
+      title: sectionName,
     });
     toast.success("Section updated successfully");
     return response.data.data;
@@ -270,7 +276,7 @@ export const editSection = async (sectionName, sectionId, token) => {
 export const deleteSection = async (sectionId, courseId, token) => {
   const toastId = toast.loading("Deleting section...");
   try {
-    const response = await axiosInstance.delete(DELETE_SECTION_API, {
+    const response = await axiosInstance.delete(DELETE_SECTION_API(sectionId), {
       data: { sectionId, courseId },
     });
     toast.success("Section deleted successfully");
@@ -291,7 +297,7 @@ export const addSubsection = async (formData, token) => {
   const toastId = toast.loading("Uploading lecture...");
   try {
     const response = await axiosInstance.post(
-      CREATE_SUBSECTION_API,
+      CREATE_SUBSECTION_V2_API,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     );
@@ -309,7 +315,7 @@ export const editSubsection = async (subSectionId, formData, token) => {
   const toastId = toast.loading("Updating lecture...");
   try {
     const response = await axiosInstance.put(
-      UPDATE_SUBSECTION_API(subSectionId),
+      UPDATE_SUBSECTION_V2_API(subSectionId),
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     );
@@ -327,7 +333,7 @@ export const editSubsection = async (subSectionId, formData, token) => {
 export const deleteSubsection = async (subSectionId, sectionId, courseId, token) => {
   const toastId = toast.loading("Deleting lecture...");
   try {
-    const response = await axiosInstance.delete(DELETE_SUBSECTION_API, {
+    const response = await axiosInstance.delete(DELETE_SUBSECTION_API(subSectionId), {
       data: { subSectionId, sectionId, courseId },
     });
     toast.success("Lecture deleted successfully");
@@ -605,5 +611,29 @@ export const fetchCourseReviews = async (courseId) => {
     return response.data.data || [];
   } catch (error) {
     return [];
+  }
+};
+
+export const fetchInstructorCourseDetails = async (courseId, dispatch) => {
+  if (dispatch) dispatch(setLoading(true));
+  const toastId = toast.loading("Loading course...");
+  try {
+    const response = await axiosInstance.get(GET_INSTRUCTOR_COURSE_DETAILS(courseId));
+    return response.data.data;
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Could not load course details");
+    return null;
+  } finally {
+    if (dispatch) dispatch(setLoading(false));
+    toast.dismiss(toastId);
+  }
+};
+
+export const fetchCourseStudents = async (courseId) => {
+  try {
+    const response = await axiosInstance.get(GET_COURSE_STUDENTS(courseId));
+    return response.data.data || { students: [], totalStudents: 0 };
+  } catch (error) {
+    return { students: [], totalStudents: 0 };
   }
 };

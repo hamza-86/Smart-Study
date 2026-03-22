@@ -1,62 +1,52 @@
-/**
- * InstructorDashboard Page
- * FILE: src/pages/instructor/InstructorDashboard.jsx
- *
- * Displays instructor overview: courses, earnings, students, and analytics
- */
-
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { VscAdd } from "react-icons/vsc";
-import Footer from "../../components/Footer";
-import EmptyState from "../../components/common/EmptyState";
-import { fadeIn } from "../../utils/motion";
+import { VscBook, VscCreditCard, VscOrganization } from "react-icons/vsc";
+import { fetchInstructorCourses } from "../../services/courseServices";
 
-const StatCard = ({ label, value, icon: Icon }) => (
-  <motion.div
-    variants={fadeIn("up", "spring", 0.2, 1)}
-    className="bg-richblack-800 border border-richblack-700 rounded-lg p-6"
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-richblack-400 text-sm">{label}</p>
-        <p className="text-richblack-5 text-2xl font-bold mt-2">{value}</p>
-      </div>
-      {Icon && <Icon className="text-caribbeangreen-200 text-3xl opacity-50" />}
-    </div>
-  </motion.div>
-);
+const cardClass =
+  "rounded-xl border border-richblack-700 bg-richblack-800 p-5 transition hover:border-richblack-500";
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
-  const user = useSelector((state) => state.auth.user);
-  const loading = useSelector((state) => state.auth.loading);
+  const authLoading = useSelector((state) => state.auth.loading);
 
-  const [stats, setStats] = useState({
-    totalCourses: 0,
-    totalStudents: 0,
-    totalEarnings: 0,
-    coursesInReview: 0,
-  });
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
-    
-    // TODO: Fetch instructor stats from backend
-    // For now, using placeholder data
-    setStats({
-      totalCourses: 5,
-      totalStudents: 324,
-      totalEarnings: 45230,
-      coursesInReview: 1,
-    });
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const load = async () => {
+      setLoading(true);
+      const list = await fetchInstructorCourses(token, dispatch);
+      setCourses(Array.isArray(list) ? list : []);
+      setLoading(false);
+    };
+
+    load();
   }, [token, dispatch, navigate]);
 
-  if (loading) {
+  const stats = useMemo(() => {
+    const totalCourses = courses.length;
+    const totalStudents = courses.reduce(
+      (sum, course) => sum + Number(course.totalStudents || 0),
+      0
+    );
+    const totalEarnings = courses.reduce(
+      (sum, course) => sum + Number(course.totalStudents || 0) * Number(course.price || 0),
+      0
+    );
+
+    return { totalCourses, totalStudents, totalEarnings };
+  }, [courses]);
+
+  if (authLoading || loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-richblack-900">
         <div className="loader" />
@@ -65,78 +55,84 @@ const InstructorDashboard = () => {
   }
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full flex justify-center items-start bg-richblack-900 min-h-screen"
-      >
-        <div className="mt-16 w-full max-w-6xl px-4 pb-16">
-          {/* Header */}
-          <div className="flex justify-between items-center pt-10 mb-8">
-            <div>
-              <h1 className="text-richblack-5 font-bold text-3xl">
-                Welcome back, {user?.firstName || "Instructor"}
-              </h1>
-              <p className="text-richblack-400 text-sm mt-2">
-                Here's your teaching dashboard overview
-              </p>
+    <div className="min-h-screen bg-richblack-900 px-4 pb-16 pt-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-richblack-5">Instructor Dashboard</h1>
+            <p className="mt-2 text-sm text-richblack-300">
+              Overview synced with your My Courses data source.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/add-course")}
+            className="rounded-lg bg-yellow-50 px-4 py-2.5 text-sm font-semibold text-richblack-900 transition hover:bg-yellow-100"
+          >
+            Create Course
+          </button>
+        </div>
+
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={cardClass}>
+            <div className="mb-3 inline-flex rounded-lg bg-richblack-700 p-2 text-yellow-50">
+              <VscBook size={20} />
             </div>
+            <p className="text-sm text-richblack-300">Total Courses</p>
+            <p className="mt-1 text-2xl font-bold text-richblack-5">{stats.totalCourses}</p>
+          </div>
+          <div className={cardClass}>
+            <div className="mb-3 inline-flex rounded-lg bg-richblack-700 p-2 text-yellow-50">
+              <VscOrganization size={20} />
+            </div>
+            <p className="text-sm text-richblack-300">Total Students</p>
+            <p className="mt-1 text-2xl font-bold text-richblack-5">{stats.totalStudents}</p>
+          </div>
+          <div className={cardClass}>
+            <div className="mb-3 inline-flex rounded-lg bg-richblack-700 p-2 text-yellow-50">
+              <VscCreditCard size={20} />
+            </div>
+            <p className="text-sm text-richblack-300">Estimated Revenue</p>
+            <p className="mt-1 text-2xl font-bold text-richblack-5">Rs {stats.totalEarnings}</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-richblack-700 bg-richblack-800 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-richblack-5">Recent Courses</h2>
             <button
-              onClick={() => navigate("/dashboard/add-course")}
-              className="flex items-center gap-2 px-4 py-2 bg-caribbeangreen-500 text-richblack-900 font-semibold rounded-lg hover:bg-caribbeangreen-600 transition"
+              onClick={() => navigate("/dashboard/my-courses")}
+              className="text-sm font-medium text-yellow-50 hover:text-yellow-100"
             >
-              <VscAdd size={18} />
-              New Course
+              View all
             </button>
           </div>
-
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ staggerChildren: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
-          >
-            <StatCard label="Total Courses" value={stats.totalCourses} />
-            <StatCard label="Total Students" value={stats.totalStudents} />
-            <StatCard label="Total Earnings" value={`$${stats.totalEarnings}`} />
-            <StatCard label="Courses in Review" value={stats.coursesInReview} />
-          </motion.div>
-
-          {/* Quick Actions */}
-          <motion.div
-            variants={fadeIn("up", "spring", 0.4, 1)}
-            className="bg-richblack-800 border border-richblack-700 rounded-lg p-8"
-          >
-            <h2 className="text-richblack-5 font-bold text-xl mb-6">
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-3">
+            {courses.slice(0, 5).map((course) => (
               <button
-                onClick={() => navigate("/dashboard/my-courses")}
-                className="p-4 bg-richblack-700 hover:bg-richblack-600 rounded-lg text-richblack-200 text-sm font-medium transition"
+                key={course._id}
+                onClick={() => navigate(`/dashboard/course/${course._id}`)}
+                className="flex w-full items-center gap-3 rounded-lg border border-richblack-700 bg-richblack-900 p-3 text-left transition hover:border-richblack-500"
               >
-                → Manage Courses
+                <img
+                  src={course.thumbnail || "https://placehold.co/160x90?text=Course"}
+                  alt={course.title}
+                  className="h-14 w-24 rounded object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-richblack-5">{course.title}</p>
+                  <p className="text-xs text-richblack-400">
+                    {course.totalStudents || 0} students • Rs {course.price || 0}
+                  </p>
+                </div>
               </button>
-              <button
-                onClick={() => navigate("/dashboard/students")}
-                className="p-4 bg-richblack-700 hover:bg-richblack-600 rounded-lg text-richblack-200 text-sm font-medium transition"
-              >
-                → View Students
-              </button>
-              <button
-                onClick={() => navigate("/dashboard/earnings")}
-                className="p-4 bg-richblack-700 hover:bg-richblack-600 rounded-lg text-richblack-200 text-sm font-medium transition"
-              >
-                → View Earnings
-              </button>
-            </div>
-          </motion.div>
+            ))}
+            {!courses.length ? (
+              <p className="text-sm text-richblack-400">No courses yet. Create your first course to get started.</p>
+            ) : null}
+          </div>
         </div>
-      </motion.div>
-      <Footer />
-    </>
+      </div>
+    </div>
   );
 };
 

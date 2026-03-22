@@ -60,7 +60,18 @@ const InstructorCourseCard = ({ course, token, onDelete, index }) => {
       initial="hidden"
       animate="show"
     >
-      <div className="w-full flex items-center gap-4 p-4 border-b border-richblack-700 hover:bg-richblack-800 transition rounded-xl">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate(`/dashboard/course/${course._id}`)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate(`/dashboard/course/${course._id}`);
+          }
+        }}
+        className="w-full flex items-center gap-4 p-4 border-b border-richblack-700 hover:bg-richblack-800 transition rounded-xl text-left"
+      >
 
         {/* Thumbnail */}
         <img
@@ -108,14 +119,20 @@ const InstructorCourseCard = ({ course, token, onDelete, index }) => {
           <div className="flex items-center gap-1 text-richblack-300">
             <button
               title="Edit course"
-              onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/dashboard/edit-course/${course._id}`);
+              }}
               className="p-2 rounded-lg hover:bg-richblack-700 hover:text-caribbeangreen-300 transition"
             >
               <FiEdit2 size={18} />
             </button>
             <button
               title="Delete course"
-              onClick={() => setDeleteOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteOpen(true);
+              }}
               className="p-2 rounded-lg hover:bg-richblack-700 hover:text-pink-400 transition"
             >
               <RiDeleteBin6Line size={18} />

@@ -10,14 +10,14 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
+import InstructorDashboard from "./instructor/InstructorDashboard";
 
 const DashboardPage = () => {
   const user = useSelector((state) => state.auth.user);
   const role = String(user?.accountType || "").toLowerCase();
 
   if (role === "instructor") {
-    // Redirect to instructor overview dashboard (new page)
-    return <Navigate to="/dashboard/instructor" replace />;
+    return <InstructorDashboard />;
   }
 
   if (role === "student") {

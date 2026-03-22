@@ -10,6 +10,7 @@ const Category = require("../models/Category");
 const Section = require("../models/Section");
 const SubSection = require("../models/subSection");
 const Enrollment = require("../models/Enrollment");
+const InstructorEarning = require("../models/InstructorEarnings");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
@@ -229,9 +230,13 @@ const getCourseDetails = async (courseId, requestingUserId = null) => {
     .populate("category", "name slug")
     .populate({
       path: "courseContent",
+      options: { sort: { order: 1 } },
       populate: {
         path: "subSections",
-        select: "title timeDuration isPreview order description",
+        options: { sort: { order: 1 } },
+        populate: {
+          path: "quizzes",
+        },
       },
     })
     .lean();
@@ -242,6 +247,10 @@ const getCourseDetails = async (courseId, requestingUserId = null) => {
 
   // Check if requesting user is enrolled
   let isEnrolled = false;
+  const isOwner =
+    Boolean(requestingUserId) &&
+    String(course.instructor?._id) === String(requestingUserId);
+
   if (requestingUserId) {
     const enrollment = await Enrollment.findOne({
       user:   requestingUserId,
@@ -251,19 +260,55 @@ const getCourseDetails = async (courseId, requestingUserId = null) => {
     isEnrolled = !!enrollment;
   }
 
-  // For non-enrolled users: strip videoUrl from non-preview lectures
-  if (!isEnrolled) {
+  if (isOwner) {
+    const [enrollments, earningsAgg] = await Promise.all([
+      Enrollment.find({ course: courseId, status: "Active" })
+        .populate("user", "firstName lastName email avatar")
+        .sort("-enrolledAt")
+        .lean(),
+      InstructorEarning.aggregate([
+        {
+          $match: {
+            course: new mongoose.Types.ObjectId(courseId),
+            instructor: new mongoose.Types.ObjectId(requestingUserId),
+            status: { $ne: "Refunded" },
+          },
+        },
+        { $group: { _id: null, totalEarnings: { $sum: "$netEarning" } } },
+      ]),
+    ]);
+
+    course.totalStudents = enrollments.length;
+    course.totalEarnings = earningsAgg[0]?.totalEarnings || 0;
+    course.enrolledStudents = enrollments.map((en) => ({
+      _id: en.user?._id,
+      firstName: en.user?.firstName,
+      lastName: en.user?.lastName,
+      email: en.user?.email,
+      avatar: en.user?.avatar,
+      enrolledAt: en.enrolledAt,
+    }));
+  }
+
+  // For non-enrolled non-owner users: strip gated media URLs
+  if (!isEnrolled && !isOwner) {
     course.courseContent = course.courseContent?.map((section) => ({
       ...section,
       subSections: section.subSections?.map((sub) => {
         if (!sub.isPreview) {
-          const { videoUrl, ...rest } = sub;
+          const { videoUrl, contentUrl, textContent, attachments, quizzes, ...rest } = sub;
           return rest;
         }
         return sub;
       }),
     }));
   }
+
+  course.sections = (course.courseContent || []).map((section) => ({
+    ...section,
+    title: section.sectionName,
+    subsections: section.subSections || [],
+  }));
 
   return { success: true, data: course, isEnrolled };
 };
@@ -303,6 +348,12 @@ const getCourseContent = async (courseId, userId) => {
     throw APIError.notFound("Course");
   }
 
+  course.sections = (course.courseContent || []).map((section) => ({
+    ...section,
+    title: section.sectionName,
+    subsections: section.subSections || [],
+  }));
+
   return { success: true, data: course };
 };
 
@@ -330,6 +381,94 @@ const getInstructorCourses = async (instructorId, page = 1, limit = 10) => {
       page:  parseInt(page),
       limit: parseInt(limit),
       pages: Math.ceil(total / limit),
+    },
+  };
+};
+
+const getInstructorCourseDetails = async (courseId, instructorId) => {
+  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+    throw APIError.validation("Invalid course ID");
+  }
+
+  const course = await Course.findOne({ _id: courseId, instructor: instructorId })
+    .populate("instructor", "firstName lastName email avatar")
+    .populate("category", "name slug")
+    .populate({
+      path: "courseContent",
+      options: { sort: { order: 1 } },
+      populate: {
+        path: "subSections",
+        options: { sort: { order: 1 } },
+        populate: { path: "quizzes" },
+      },
+    })
+    .lean();
+
+  if (!course) {
+    throw APIError.notFound("Course");
+  }
+
+  const [enrollments, earningsAgg] = await Promise.all([
+    Enrollment.find({ course: courseId, status: "Active" })
+      .populate("user", "firstName lastName email avatar")
+      .sort("-enrolledAt")
+      .lean(),
+    InstructorEarning.aggregate([
+      {
+        $match: {
+          course: new mongoose.Types.ObjectId(courseId),
+          instructor: new mongoose.Types.ObjectId(instructorId),
+          status: { $ne: "Refunded" },
+        },
+      },
+      { $group: { _id: null, totalEarnings: { $sum: "$netEarning" } } },
+    ]),
+  ]);
+
+  return {
+    success: true,
+    data: {
+      ...course,
+      totalStudents: enrollments.length,
+      totalEarnings: earningsAgg[0]?.totalEarnings || 0,
+      enrolledStudents: enrollments.map((en) => ({
+        _id: en.user?._id,
+        firstName: en.user?.firstName,
+        lastName: en.user?.lastName,
+        email: en.user?.email,
+        avatar: en.user?.avatar,
+        enrolledAt: en.enrolledAt,
+      })),
+    },
+  };
+};
+
+const getCourseStudents = async (courseId, instructorId) => {
+  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+    throw APIError.validation("Invalid course ID");
+  }
+
+  const course = await Course.findOne({ _id: courseId, instructor: instructorId }).lean();
+  if (!course) {
+    throw APIError.notFound("Course");
+  }
+
+  const enrollments = await Enrollment.find({ course: courseId, status: "Active" })
+    .populate("user", "firstName lastName email avatar")
+    .sort("-enrolledAt")
+    .lean();
+
+  return {
+    success: true,
+    data: {
+      totalStudents: enrollments.length,
+      students: enrollments.map((en) => ({
+        _id: en.user?._id,
+        firstName: en.user?.firstName,
+        lastName: en.user?.lastName,
+        email: en.user?.email,
+        avatar: en.user?.avatar,
+      })),
     },
   };
 };
@@ -548,6 +687,8 @@ module.exports = {
   getCourseDetails,
   getCourseContent,
   getInstructorCourses,
+  getInstructorCourseDetails,
+  getCourseStudents,
   updateCourse,
   publishCourse,
   deleteCourse,

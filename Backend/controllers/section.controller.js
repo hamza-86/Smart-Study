@@ -20,11 +20,15 @@ const { validateRequired } = require("../utils/validators");
 exports.createSection = asyncHandler(async (req, res) => {
   const instructorId = req.user.id;
   const courseId     = req.body.courseId;
+  const sectionName = req.body.sectionName || req.body.title;
 
   validateRequired(courseId,           "Course ID");
-  validateRequired(req.body.sectionName, "Section name");
+  validateRequired(sectionName, "Section name");
 
-  const result = await createSection(courseId, instructorId, req.body);
+  const result = await createSection(courseId, instructorId, {
+    ...req.body,
+    sectionName,
+  });
 
   res
     .status(HTTP_STATUS.CREATED)
@@ -37,10 +41,14 @@ exports.createSection = asyncHandler(async (req, res) => {
 exports.updateSection = asyncHandler(async (req, res) => {
   const sectionId    = req.params.sectionId;
   const instructorId = req.user.id;
+  const sectionName = req.body.sectionName || req.body.title;
 
   validateRequired(sectionId, "Section ID");
 
-  const result = await updateSection(sectionId, instructorId, req.body);
+  const result = await updateSection(sectionId, instructorId, {
+    ...req.body,
+    sectionName,
+  });
 
   res
     .status(HTTP_STATUS.OK)

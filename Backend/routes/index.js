@@ -22,6 +22,8 @@ const progressRoutes   = require("./progress.routes");
 const instructorRoutes = require("./instructor.routes");
 const studentRoutes    = require("./student.routes");
 const couponRoutes     = require("./coupon.routes");
+const sectionRoutes    = require("./section.routes");
+const subsectionRoutes = require("./subsection.routes");
 
 router.use("/auth",        authRoutes);
 router.use("/courses",     courseRoutes);
@@ -32,5 +34,7 @@ router.use("/progress",    progressRoutes);
 router.use("/instructor",  instructorRoutes);
 router.use("/student",     studentRoutes);
 router.use("/coupons",     couponRoutes);
+router.use("/sections",    sectionRoutes);
+router.use("/subsections", subsectionRoutes);
 
 module.exports = router;

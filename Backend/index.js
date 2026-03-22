@@ -25,6 +25,8 @@ const progressRoutes = require("./routes/progress.routes");
 const instructorRoutes = require("./routes/instructor.routes");
 const studentRoutes = require("./routes/student.routes");
 const couponRoutes = require("./routes/coupon.routes");
+const sectionRoutes = require("./routes/section.routes");
+const subsectionRoutes = require("./routes/subsection.routes");
 
 const app = express();
 
@@ -106,6 +108,8 @@ app.use("/api/v1/progress", progressRoutes);
 app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/coupons", couponRoutes);
+app.use("/api/v1/sections", sectionRoutes);
+app.use("/api/v1/subsections", subsectionRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

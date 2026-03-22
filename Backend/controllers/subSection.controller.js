@@ -16,8 +16,8 @@ const { validateRequired } = require("../utils/validators");
 
 /**
  * Create subsection (lecture)
- * Body: sectionId, courseId, title, description, isPreview
- * Files: video (required), notes (optional, PDF/doc)
+ * Body: sectionId, courseId, title, description, isPreview, type
+ * Files: video/image/file (type-based), notes (optional, PDF/doc)
  */
 exports.createSubSection = asyncHandler(async (req, res) => {
   const instructorId = req.user.id;
@@ -26,15 +26,16 @@ exports.createSubSection = asyncHandler(async (req, res) => {
 
   validateRequired(sectionId,        "Section ID");
   validateRequired(courseId,         "Course ID");
-  validateRequired(req.body.title,       "Video title");
-  validateRequired(req.body.description, "Video description");
+  validateRequired(req.body.title, "Subsection title");
+  validateRequired(req.body.description, "Subsection description");
 
-  if (!req.files?.video) {
-    throw APIError.validation("Video file is required");
+  const type = String(req.body.type || "video").toLowerCase();
+  const mediaFile = req.files?.video || req.files?.image || req.files?.file || null;
+  if ((type === "video" || type === "image") && !mediaFile) {
+    throw APIError.validation(`${type === "video" ? "Video" : "Image"} file is required`);
   }
 
-  const video = req.files.video;
-  if (video.size > FILE_UPLOAD.MAX_VIDEO_SIZE) {
+  if (type === "video" && mediaFile?.size > FILE_UPLOAD.MAX_VIDEO_SIZE) {
     throw APIError.validation(
       `Video size must not exceed ${FILE_UPLOAD.MAX_VIDEO_SIZE / (1024 * 1024)}MB`
     );
@@ -52,7 +53,7 @@ exports.createSubSection = asyncHandler(async (req, res) => {
     courseId,
     instructorId,
     req.body,
-    video,
+    mediaFile,
     notes
   );
 
@@ -63,16 +64,16 @@ exports.createSubSection = asyncHandler(async (req, res) => {
 
 /**
  * Update subsection
- * Body: title, description, isPreview, order
- * Files: video (optional replacement), notes (optional)
+ * Body: title, description, isPreview, order, type
+ * Files: video/image/file (optional replacement), notes (optional)
  */
 exports.updateSubSection = asyncHandler(async (req, res) => {
-  const subSectionId = req.params.subSectionId;
+  const subSectionId = req.params.subSectionId || req.params.id;
   const instructorId = req.user.id;
 
   validateRequired(subSectionId, "SubSection ID");
 
-  const video = req.files?.video || null;
+  const mediaFile = req.files?.video || req.files?.image || req.files?.file || null;
   const notes = req.files?.notes
     ? Array.isArray(req.files.notes)
       ? req.files.notes
@@ -83,7 +84,7 @@ exports.updateSubSection = asyncHandler(async (req, res) => {
     subSectionId,
     instructorId,
     req.body,
-    video,
+    mediaFile,
     notes
   );
 
@@ -97,7 +98,7 @@ exports.updateSubSection = asyncHandler(async (req, res) => {
  * Body: sectionId (so section's subSections array is cleaned up)
  */
 exports.deleteSubSection = asyncHandler(async (req, res) => {
-  const subSectionId = req.params.subSectionId;
+  const subSectionId = req.params.subSectionId || req.params.id;
   const instructorId = req.user.id;
   const sectionId    = req.body.sectionId;
   const courseId     = req.body.courseId;

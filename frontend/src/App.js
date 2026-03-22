@@ -14,7 +14,7 @@
  */
 
 import { useSelector } from "react-redux";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 // Components (always loaded)
@@ -47,7 +47,7 @@ const AddCourse      = lazy(() => import("./pages/instructor/AddCourse"));
 const EditCourse     = lazy(() => import("./pages/instructor/EditCourse"));
 const CreateSection  = lazy(() => import("./pages/instructor/CreateSection"));
 const PublishCourse  = lazy(() => import("./pages/instructor/PublishCourse"));
-const InstructorDashboard = lazy(() => import("./pages/instructor/InstructorDashboard"));
+const InstructorCourseDetails = lazy(() => import("./pages/instructor/InstructorCourseDetails"));
 const InstructorStudents  = lazy(() => import("./pages/instructor/InstructorStudents"));
 const InstructorEarnings  = lazy(() => import("./pages/instructor/InstructorEarnings"));
 
@@ -99,13 +99,11 @@ function App() {
             {isInstructor && (
               <>
                 {/* Overview dashboard */}
-                <Route
-                  path="/dashboard/instructor"
-                  element={<InstructorDashboard />}
-                />
+                <Route path="/dashboard/instructor" element={<Navigate to="/dashboard" replace />} />
                 {/* Course management */}
                 <Route path="/dashboard/my-courses"     element={<MyCourses />} />
                 <Route path="/dashboard/add-course"     element={<AddCourse />} />
+                <Route path="/dashboard/course/:courseId" element={<InstructorCourseDetails />} />
                 <Route path="/dashboard/edit-course/:courseId" element={<EditCourse />} />
                 <Route path="/dashboard/add-section"    element={<CreateSection />} />
                 <Route path="/dashboard/publish-course" element={<PublishCourse />} />

@@ -36,34 +36,27 @@ export const sidebarLinks = [
   // ── Instructor ────────────────────────────────────────────────────────────
   {
     id:   3,
-    name: "Overview",
-    path: "/dashboard/instructor",
-    type: ACCOUNT_TYPE.INSTRUCTOR,
-    icon: "VscOutput",
-  },
-  {
-    id:   4,
     name: "My Courses",
     path: "/dashboard/my-courses",
     type: ACCOUNT_TYPE.INSTRUCTOR,
     icon: "VscVm",
   },
   {
-    id:   5,
+    id:   4,
     name: "Add Course",
     path: "/dashboard/add-course",
     type: ACCOUNT_TYPE.INSTRUCTOR,
     icon: "VscAdd",
   },
   {
-    id:   6,
+    id:   5,
     name: "Students",
     path: "/dashboard/students",
     type: ACCOUNT_TYPE.INSTRUCTOR,
     icon: "VscPeople",
   },
   {
-    id:   7,
+    id:   6,
     name: "Earnings",
     path: "/dashboard/earnings",
     type: ACCOUNT_TYPE.INSTRUCTOR,

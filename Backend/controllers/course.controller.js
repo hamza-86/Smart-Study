@@ -9,6 +9,8 @@ const {
   getCourseDetails,
   getCourseContent,
   getInstructorCourses,
+  getInstructorCourseDetails,
+  getCourseStudents,
   updateCourse,
   publishCourse,
   deleteCourse,
@@ -126,6 +128,30 @@ exports.getInstructorCourses = asyncHandler(async (req, res) => {
         "Instructor courses retrieved"
       )
     );
+});
+
+exports.getInstructorCourseDetails = asyncHandler(async (req, res) => {
+  const instructorId = req.user.id;
+  const { courseId } = req.params;
+
+  validateRequired(courseId, "Course ID");
+  const result = await getInstructorCourseDetails(courseId, instructorId);
+
+  res
+    .status(HTTP_STATUS.OK)
+    .json(APIResponse.success(result.data, "Instructor course details retrieved"));
+});
+
+exports.getCourseStudents = asyncHandler(async (req, res) => {
+  const instructorId = req.user.id;
+  const { courseId } = req.params;
+
+  validateRequired(courseId, "Course ID");
+  const result = await getCourseStudents(courseId, instructorId);
+
+  res
+    .status(HTTP_STATUS.OK)
+    .json(APIResponse.success(result.data, "Course students retrieved"));
 });
 
 /**

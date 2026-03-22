@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { MdDone } from "react-icons/md";
 import { FiUpload, FiX } from "react-icons/fi";
+import toast from "react-hot-toast";
 import { fetchCategories, createCourse } from "../../services/courseServices";
 import { setCourse } from "../../slices/courseSlice";
 import { COURSE_LEVELS } from "../../constants";
@@ -111,7 +112,21 @@ const AddCourse = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!thumbnail) return;
+    if (!form.title.trim() || !form.description.trim() || !form.price || !form.category) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    if (!thumbnail) {
+      toast.error("Course thumbnail is required");
+      return;
+    }
+    if (
+      form.discountedPrice &&
+      Number(form.discountedPrice) > Number(form.price)
+    ) {
+      toast.error("Discounted price cannot be greater than price");
+      return;
+    }
 
     setLoading(true);
 
@@ -135,7 +150,7 @@ const AddCourse = () => {
 
     if (result) {
       dispatch(setCourse(result));
-      navigate("/dashboard/add-section");
+      navigate(`/dashboard/edit-course/${result._id}`);
     }
   };
 

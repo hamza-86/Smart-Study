@@ -60,9 +60,11 @@ const CreateSection = () => {
 
   const courseId = courseDetails?._id;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!sectionName.trim()) return;
+  const handleSubmit = async () => {
+    if (!sectionName.trim()) {
+      toast.error("Section name is required");
+      return;
+    }
     setSubmitting(true);
 
     // createSection returns the section object directly (not wrapped in response.data)
@@ -72,6 +74,8 @@ const CreateSection = () => {
     if (newSection) {
       dispatch(setSections([...(sections || []), newSection]));
       setSectionName("");
+    } else {
+      toast.error("Could not create section");
     }
   };
 
@@ -121,7 +125,7 @@ const CreateSection = () => {
           )}
 
           {/* Add section form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
               <p className="text-sm font-medium text-richblack-5">
                 Section Name <sup className="text-pink-200">*</sup>
@@ -138,7 +142,8 @@ const CreateSection = () => {
 
             <div className="flex items-center justify-between gap-4">
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={submitting}
                 className="flex items-center gap-2 bg-richblack-900 text-yellow-50 border border-yellow-50 font-medium py-2.5 px-5 rounded-lg hover:bg-richblack-700 transition disabled:opacity-60"
               >
@@ -155,7 +160,7 @@ const CreateSection = () => {
                 <MdNavigateNext size={20} />
               </button>
             </div>
-          </form>
+          </div>
         </div>
 
         {/* Tips sidebar */}

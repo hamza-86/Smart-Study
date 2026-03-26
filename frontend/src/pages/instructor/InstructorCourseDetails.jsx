@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiChevronDown, FiEdit2 } from "react-icons/fi";
-import { RiDeleteBin6Line } from "react-icons/ri";
-import toast from "react-hot-toast";
+import { FiChevronDown } from "react-icons/fi";
 import {
+  fetchInstructorCourseDetails,
   deleteSection,
   deleteSubsection,
-  fetchInstructorCourseDetails,
+  togglePublishCourse,
 } from "../../services/courseServices";
 
 const InstructorCourseDetails = () => {
@@ -19,7 +18,7 @@ const InstructorCourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState([]);
-  const [showStudents, setShowStudents] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const loadCourse = useCallback(async () => {
     setLoading(true);
@@ -39,31 +38,34 @@ const InstructorCourseDetails = () => {
     loadCourse();
   }, [token, navigate, loadCourse]);
 
-  const topStudents = useMemo(
-    () => (course?.enrolledStudents || []).slice(0, 5),
-    [course?.enrolledStudents]
-  );
+  const introVideo = useMemo(() => {
+    const introSection = (course?.courseContent || []).find(
+      (section) => String(section.sectionName || "").trim().toLowerCase() === "introduction"
+    );
+    return (introSection?.subSections || []).find((sub) => String(sub.type).toLowerCase() === "video") || null;
+  }, [course]);
 
   const toggleSection = (id) => {
-    setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setOpenSections((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const handleDeleteSection = async (sectionId) => {
     const ok = await deleteSection(sectionId, courseId, token);
-    if (ok) {
-      toast.success("Section deleted");
-      loadCourse();
-    }
+    if (ok) loadCourse();
   };
 
   const handleDeleteSubsection = async (sectionId, subSectionId) => {
     const ok = await deleteSubsection(subSectionId, sectionId, courseId, token);
-    if (ok) {
-      toast.success("Subsection deleted");
-      loadCourse();
-    }
+    if (ok) loadCourse();
+  };
+
+  const isActive = String(course?.status) === "Published";
+
+  const handleToggleStatus = async () => {
+    setStatusLoading(true);
+    const result = await togglePublishCourse(courseId);
+    setStatusLoading(false);
+    if (result) loadCourse();
   };
 
   if (loading) {
@@ -86,168 +88,91 @@ const InstructorCourseDetails = () => {
     <div className="min-h-screen bg-richblack-900 px-4 pb-16 pt-24">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="rounded-2xl border border-richblack-700 bg-richblack-800 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="grid gap-5 md:grid-cols-[320px,1fr]">
+            <img src={course.thumbnail || "https://placehold.co/320x180?text=Course"} alt={course.title} className="h-48 w-full rounded-xl object-cover" />
+            <div>
               <h1 className="text-2xl font-bold text-richblack-5">{course.title}</h1>
               <p className="mt-2 text-sm text-richblack-300">{course.description}</p>
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-richblack-300">
-                <span>{course.totalStudents || 0} students</span>
-                <span>Rs {course.totalEarnings || 0} earnings</span>
-                <span>{(course.courseContent || []).length} sections</span>
+              <div className="mt-4 flex flex-wrap gap-3 text-xs">
+                <span className="rounded-full bg-richblack-700 px-3 py-1 text-richblack-200">{course.totalStudents || 0} Students</span>
+                <span className="rounded-full bg-richblack-700 px-3 py-1 text-richblack-200">Rs {course.totalEarnings || 0} Earnings</span>
+              </div>
+              <div className="mt-5 flex gap-3">
+                <button onClick={() => navigate(`/dashboard/edit-course/${course._id}`)} className="rounded-lg bg-yellow-50 px-4 py-2 text-sm font-semibold text-richblack-900">
+                  Edit Details
+                </button>
+                <button onClick={() => navigate(`/dashboard/course-builder/${course._id}`)} className="rounded-lg border border-richblack-600 px-4 py-2 text-sm text-richblack-100">
+                  Manage Content
+                </button>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <span className="text-xs text-richblack-300">Course Status</span>
+                <button
+                  type="button"
+                  disabled={statusLoading}
+                  onClick={handleToggleStatus}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    isActive ? "bg-caribbeangreen-900 text-caribbeangreen-200" : "bg-richblack-700 text-richblack-200"
+                  } disabled:opacity-60`}
+                >
+                  {statusLoading ? "Updating..." : isActive ? "Active" : "Inactive"}
+                </button>
               </div>
             </div>
-            <img
-              src={course.thumbnail || "https://placehold.co/320x180?text=Course"}
-              alt={course.title}
-              className="h-32 w-56 rounded-lg object-cover"
-            />
-          </div>
-          <div className="mt-5 flex gap-3">
-            <button
-              onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
-              className="rounded-lg bg-yellow-50 px-4 py-2 text-sm font-semibold text-richblack-900 hover:bg-yellow-100"
-            >
-              Edit Course
-            </button>
-            <button
-              onClick={() => navigate("/dashboard/my-courses")}
-              className="rounded-lg border border-richblack-600 px-4 py-2 text-sm text-richblack-100 hover:bg-richblack-700"
-            >
-              Back to Courses
-            </button>
           </div>
         </div>
 
         <div className="rounded-2xl border border-richblack-700 bg-richblack-800 p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-richblack-5">Course Sections</h2>
-            <button
-              onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
-              className="text-sm text-yellow-50 hover:text-yellow-100"
-            >
-              Manage in editor
-            </button>
-          </div>
+          <h2 className="mb-3 text-lg font-semibold text-richblack-5">Intro Video</h2>
+          {introVideo?.videoUrl ? (
+            <video src={introVideo.videoUrl} controls className="mx-auto aspect-video w-full max-w-3xl rounded-xl bg-black object-contain" />
+          ) : (
+            <div className="grid aspect-video place-items-center rounded-xl border border-richblack-700 bg-richblack-900 text-sm text-yellow-50">
+              Introduction video is required. Add it from Manage Content.
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-richblack-700 bg-richblack-800 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-richblack-5">Sections</h2>
           <div className="space-y-3">
             {(course.courseContent || []).map((section, sectionIndex) => {
               const isOpen = openSections.includes(section._id);
               return (
-                <div
-                  key={section._id}
-                  className="overflow-hidden rounded-lg border border-richblack-700 bg-richblack-900"
-                >
+                <div key={section._id} className="overflow-hidden rounded-lg border border-richblack-700 bg-richblack-900">
                   <div className="flex items-center justify-between gap-2 px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleSection(section._id)}
-                      className="flex items-center gap-2 text-left text-sm font-medium text-richblack-50"
-                    >
+                    <button type="button" onClick={() => toggleSection(section._id)} className="flex items-center gap-2 text-sm font-medium text-richblack-50">
                       <FiChevronDown className={`transition ${isOpen ? "" : "-rotate-90"}`} />
-                      <span>
-                        Section {sectionIndex + 1}: {section.sectionName}
-                      </span>
+                      <span>Section {sectionIndex + 1}: {section.sectionName}</span>
                     </button>
-                    <div className="flex items-center gap-2">
+                    {String(section.sectionName || "").toLowerCase() !== "introduction" ? (
                       <button
-                        className="rounded p-1.5 text-richblack-300 hover:bg-richblack-700"
-                        onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
-                        title="Edit section"
-                      >
-                        <FiEdit2 size={14} />
-                      </button>
-                      <button
-                        className="rounded p-1.5 text-pink-300 hover:bg-richblack-700"
+                        className="rounded border border-pink-400/40 px-2 py-1 text-xs text-pink-200"
                         onClick={() => handleDeleteSection(section._id)}
-                        title="Delete section"
                       >
-                        <RiDeleteBin6Line size={14} />
+                        Delete Section
                       </button>
-                    </div>
+                    ) : null}
                   </div>
                   {isOpen ? (
                     <div className="border-t border-richblack-700 px-3 py-2">
-                      {(section.subSections || []).length ? (
-                        section.subSections.map((subSection, subIndex) => (
-                          <div
-                            key={subSection._id}
-                            className="mb-1 flex items-center justify-between rounded-md px-2 py-2 text-sm text-richblack-200 hover:bg-richblack-800"
+                      {(section.subSections || []).map((subSection) => (
+                        <div key={subSection._id} className="mb-2 flex items-center justify-between rounded-md bg-richblack-800 px-3 py-2 text-sm text-richblack-200">
+                          <span>{(subSection.type || "video").toUpperCase()} - {subSection.title}</span>
+                          <button
+                            className="rounded border border-pink-400/40 px-2 py-1 text-xs text-pink-200"
+                            onClick={() => handleDeleteSubsection(section._id, subSection._id)}
                           >
-                            <span>
-                              {sectionIndex + 1}.{subIndex + 1} {subSection.type || "content"}:{" "}
-                              {subSection.title}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                className="rounded p-1.5 text-richblack-300 hover:bg-richblack-700"
-                                onClick={() => navigate(`/dashboard/edit-course/${course._id}`)}
-                                title="Edit subsection"
-                              >
-                                <FiEdit2 size={13} />
-                              </button>
-                              <button
-                                className="rounded p-1.5 text-pink-300 hover:bg-richblack-700"
-                                onClick={() =>
-                                  handleDeleteSubsection(section._id, subSection._id)
-                                }
-                                title="Delete subsection"
-                              >
-                                <RiDeleteBin6Line size={13} />
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="px-2 py-2 text-xs text-richblack-400">No subsections yet.</p>
-                      )}
+                            Delete
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   ) : null}
                 </div>
               );
             })}
           </div>
-        </div>
-
-        <div className="rounded-2xl border border-richblack-700 bg-richblack-800 p-6">
-          <h2 className="mb-3 text-lg font-semibold text-richblack-5">Enrolled Students</h2>
-          <div className="mb-3 flex -space-x-3">
-            {topStudents.map((student) => (
-              <img
-                key={student._id}
-                src={student.avatar || "https://placehold.co/80x80?text=U"}
-                alt={student.firstName}
-                className="h-10 w-10 rounded-full border-2 border-richblack-800 object-cover"
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowStudents((prev) => !prev)}
-            className="rounded bg-richblack-700 px-3 py-1.5 text-sm text-richblack-50 hover:bg-richblack-600"
-          >
-            {showStudents ? "Hide Students" : "View All Students"}
-          </button>
-          {showStudents ? (
-            <div className="mt-3 space-y-2">
-              {(course.enrolledStudents || []).map((student) => (
-                <div
-                  key={student._id}
-                  className="flex items-center gap-3 rounded-lg border border-richblack-700 bg-richblack-900 p-3"
-                >
-                  <img
-                    src={student.avatar || "https://placehold.co/80x80?text=U"}
-                    alt={student.firstName}
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-sm text-richblack-50">
-                      {student.firstName} {student.lastName}
-                    </p>
-                    <p className="text-xs text-richblack-400">{student.email}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

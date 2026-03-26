@@ -1,23 +1,23 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiUpload, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 
-import Footer from "../../components/Footer";
-import InstructorSection from "../../components/Instructor/InstructorSection";
-import {
-  createSection,
-  editCourse,
-  fetchCategories,
-  fetchCourseStudents,
-  fetchInstructorCourseDetails,
-} from "../../services/courseServices";
-import { setSections, removeSection } from "../../slices/courseSlice";
+import { editCourse, fetchCategories, fetchInstructorCourseDetails } from "../../services/courseServices";
 import { COURSE_LEVELS } from "../../constants";
 
 const inputClass =
-  "w-full border border-richblack-600 bg-richblack-700 text-richblack-100 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-50 placeholder:text-richblack-400 transition";
+  "w-full rounded-lg border border-richblack-600 bg-richblack-700 px-4 py-2.5 text-richblack-100 transition placeholder:text-richblack-400 focus:outline-none focus:ring-2 focus:ring-yellow-50";
+
+const Label = ({ text, required, error, children }) => (
+  <label className="flex flex-col gap-1.5">
+    <p className="text-sm font-medium text-richblack-5">
+      {text} {required ? <sup className="text-pink-200">*</sup> : null}
+    </p>
+    {children}
+    {error ? <span className="text-xs text-pink-300">{error}</span> : null}
+  </label>
+);
 
 const toArray = (str) =>
   String(str || "")
@@ -30,18 +30,13 @@ const EditCourse = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
-  const sections = useSelector((state) => state.course.sections);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [sectionName, setSectionName] = useState("");
-  const [addingSection, setAddingSection] = useState(false);
-
   const [categories, setCategories] = useState([]);
   const [thumbnail, setThumbnail] = useState(null);
   const [preview, setPreview] = useState("");
-  const [students, setStudents] = useState([]);
-  const [showStudents, setShowStudents] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     title: "",
@@ -66,10 +61,9 @@ const EditCourse = () => {
 
     const load = async () => {
       setLoading(true);
-      const [courseData, categoryData, studentsData] = await Promise.all([
+      const [courseData, categoryData] = await Promise.all([
         fetchInstructorCourseDetails(courseId, dispatch),
         fetchCategories(),
-        fetchCourseStudents(courseId),
       ]);
 
       if (!courseData) {
@@ -78,7 +72,6 @@ const EditCourse = () => {
       }
 
       setCategories(Array.isArray(categoryData) ? categoryData : []);
-      setStudents(studentsData?.students || []);
       setPreview(courseData.thumbnail || "");
       setForm({
         title: courseData.title || "",
@@ -94,26 +87,33 @@ const EditCourse = () => {
         requirements: (courseData.requirements || []).join("\n"),
         targetAudience: (courseData.targetAudience || []).join("\n"),
       });
-      dispatch(setSections(courseData.courseContent || []));
       setLoading(false);
     };
 
     load();
   }, [token, courseId, dispatch, navigate]);
 
-  const topStudents = useMemo(() => students.slice(0, 5), [students]);
+  const validate = () => {
+    const nextErrors = {};
+    if (!form.title.trim()) nextErrors.title = "Title is required";
+    if (!form.subtitle.trim()) nextErrors.subtitle = "Subtitle is required";
+    if (!form.description.trim()) nextErrors.description = "Description is required";
+    if (!form.price || Number(form.price) < 0) nextErrors.price = "Valid price is required";
+    if (!form.category) nextErrors.category = "Category is required";
+    if (!form.level) nextErrors.level = "Level is required";
+    if (!form.language.trim()) nextErrors.language = "Language is required";
+    if (form.discountedPrice && Number(form.discountedPrice) > Number(form.price)) {
+      nextErrors.discountedPrice = "Discounted price cannot exceed price";
+    }
 
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setThumbnail(file);
-    setPreview(URL.createObjectURL(file));
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSaveCourse = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.description.trim() || !form.price) {
-      toast.error("Please fill required fields");
+    if (!validate()) {
+      toast.error("Please fix the highlighted fields");
       return;
     }
 
@@ -136,23 +136,7 @@ const EditCourse = () => {
     const result = await editCourse(courseId, formData);
     setSaving(false);
     if (result) {
-      toast.success("Course updated");
-    }
-  };
-
-  const handleAddSection = async () => {
-    if (!sectionName.trim()) {
-      toast.error("Section name is required");
-      return;
-    }
-    setAddingSection(true);
-    const newSection = await createSection(sectionName.trim(), courseId, token);
-    setAddingSection(false);
-    if (newSection) {
-      dispatch(setSections([...(sections || []), newSection]));
-      setSectionName("");
-    } else {
-      toast.error("Could not create section");
+      toast.success("Course details updated");
     }
   };
 
@@ -165,58 +149,33 @@ const EditCourse = () => {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-richblack-900 pt-20 pb-16 px-4">
-        <div className="mx-auto w-full max-w-5xl space-y-6">
-          <div className="rounded-2xl bg-richblack-800 p-6">
-            <h2 className="mb-5 text-xl font-semibold text-richblack-5">Edit Course</h2>
-            <form onSubmit={handleSaveCourse} className="space-y-4">
-              <input
-                required
-                value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="Course title"
-                className={inputClass}
-              />
-              <input
-                value={form.subtitle}
-                onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))}
-                placeholder="Subtitle"
-                className={inputClass}
-              />
-              <textarea
-                required
-                rows={4}
-                value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Description"
-                className={`${inputClass} resize-none`}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  value={form.price}
-                  onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
-                  placeholder="Price"
-                  className={inputClass}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={form.discountedPrice}
-                  onChange={(e) => setForm((p) => ({ ...p, discountedPrice: e.target.value }))}
-                  placeholder="Discounted price"
-                  className={inputClass}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                  className={inputClass}
-                >
+    <div className="min-h-screen bg-richblack-900 px-4 pb-16 pt-24">
+      <div className="mx-auto max-w-4xl">
+        <div className="rounded-2xl bg-richblack-800 p-6 shadow-lg">
+          <h2 className="mb-6 text-xl font-semibold text-richblack-5">Edit Course Details</h2>
+          <form onSubmit={handleSaveCourse} className="space-y-4">
+            <Label text="Title" required error={errors.title}>
+              <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className={inputClass} />
+            </Label>
+            <Label text="Subtitle" required error={errors.subtitle}>
+              <input value={form.subtitle} onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))} className={inputClass} />
+            </Label>
+            <Label text="Description" required error={errors.description}>
+              <textarea rows={4} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} className={`${inputClass} resize-none`} />
+            </Label>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Label text="Price" required error={errors.price}>
+                <input type="number" min="0" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} className={inputClass} />
+              </Label>
+              <Label text="Discounted Price" error={errors.discountedPrice}>
+                <input type="number" min="0" value={form.discountedPrice} onChange={(e) => setForm((p) => ({ ...p, discountedPrice: e.target.value }))} className={inputClass} />
+              </Label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Label text="Category" required error={errors.category}>
+                <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className={inputClass}>
                   <option value="">Select category</option>
                   {categories.map((cat) => (
                     <option key={cat._id} value={cat._id}>
@@ -224,164 +183,74 @@ const EditCourse = () => {
                     </option>
                   ))}
                 </select>
-                <select
-                  value={form.level}
-                  onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))}
-                  className={inputClass}
-                >
+              </Label>
+              <Label text="Level" required error={errors.level}>
+                <select value={form.level} onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))} className={inputClass}>
                   {COURSE_LEVELS.map((l) => (
                     <option key={l} value={l}>
                       {l}
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  value={form.language}
-                  onChange={(e) => setForm((p) => ({ ...p, language: e.target.value }))}
-                  placeholder="Language"
-                  className={inputClass}
-                />
-                <input
-                  value={form.tags}
-                  onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))}
-                  placeholder="Tags comma-separated"
-                  className={inputClass}
-                />
-              </div>
-              <textarea
-                rows={3}
-                value={form.whatYouWillLearn}
-                onChange={(e) => setForm((p) => ({ ...p, whatYouWillLearn: e.target.value }))}
-                placeholder="What students will learn"
-                className={`${inputClass} resize-none`}
-              />
-              <textarea
-                rows={3}
-                value={form.requirements}
-                onChange={(e) => setForm((p) => ({ ...p, requirements: e.target.value }))}
-                placeholder="Requirements"
-                className={`${inputClass} resize-none`}
-              />
-              <textarea
-                rows={3}
-                value={form.targetAudience}
-                onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))}
-                placeholder="Target audience"
-                className={`${inputClass} resize-none`}
-              />
+              </Label>
+            </div>
 
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-richblack-600 py-6 hover:border-yellow-50">
-                {preview ? (
-                  <div className="relative w-full px-4">
-                    <img src={preview} alt="preview" className="h-44 w-full rounded-lg object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setThumbnail(null);
-                        setPreview("");
-                      }}
-                      className="absolute right-6 top-2 rounded-full bg-richblack-900 p-1 text-white"
-                    >
-                      <FiX size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <FiUpload className="mb-2 text-richblack-400" size={22} />
-                    <span className="text-sm text-richblack-300">Upload thumbnail</span>
-                  </>
-                )}
-                <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
-              </label>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Label text="Language" required error={errors.language}>
+                <input value={form.language} onChange={(e) => setForm((p) => ({ ...p, language: e.target.value }))} className={inputClass} />
+              </Label>
+              <Label text="Tags">
+                <input value={form.tags} onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))} className={inputClass} />
+              </Label>
+            </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-lg bg-yellow-50 px-5 py-2 font-semibold text-richblack-900"
-              >
-                {saving ? "Saving..." : "Save Course"}
-              </button>
-            </form>
-          </div>
+            <Label text="What Students Will Learn">
+              <textarea rows={3} value={form.whatYouWillLearn} onChange={(e) => setForm((p) => ({ ...p, whatYouWillLearn: e.target.value }))} className={`${inputClass} resize-none`} />
+            </Label>
+            <Label text="Requirements">
+              <textarea rows={3} value={form.requirements} onChange={(e) => setForm((p) => ({ ...p, requirements: e.target.value }))} className={`${inputClass} resize-none`} />
+            </Label>
+            <Label text="Target Audience">
+              <textarea rows={3} value={form.targetAudience} onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))} className={`${inputClass} resize-none`} />
+            </Label>
 
-          <div className="rounded-2xl bg-richblack-800 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-richblack-5">Sections & Subsections</h3>
-            <div className="mb-4 flex gap-2">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-richblack-600 py-6 hover:border-yellow-50">
+              {preview ? (
+                <div className="relative w-full px-4">
+                  <img src={preview} alt="preview" className="h-44 w-full rounded-lg object-cover" />
+                </div>
+              ) : (
+                <span className="text-sm text-richblack-300">Upload thumbnail</span>
+              )}
               <input
-                value={sectionName}
-                onChange={(e) => setSectionName(e.target.value)}
-                placeholder="Add section"
-                className={`${inputClass} flex-1`}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setThumbnail(file);
+                  setPreview(URL.createObjectURL(file));
+                }}
+                className="hidden"
               />
+            </label>
+
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleAddSection}
-                disabled={addingSection}
-                className="rounded-lg bg-yellow-50 px-4 py-2 font-semibold text-richblack-900"
+                onClick={() => navigate(`/dashboard/course-builder/${courseId}`)}
+                className="rounded-lg border border-richblack-600 px-4 py-2 text-sm text-richblack-100"
               >
-                {addingSection ? "Adding..." : "Add Section"}
+                Manage Content
+              </button>
+              <button type="submit" disabled={saving} className="rounded-lg bg-yellow-50 px-6 py-2.5 text-sm font-semibold text-richblack-900 disabled:opacity-60">
+                {saving ? "Saving..." : "Save Details"}
               </button>
             </div>
-            <div className="space-y-3">
-              {sections.map((sec) => (
-                <InstructorSection
-                  key={sec._id}
-                  sectionId={sec._id}
-                  name={sec.sectionName}
-                  subSections={sec.subSections}
-                  onDelete={(id) => dispatch(removeSection(id))}
-                  courseId={courseId}
-                  token={token}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-richblack-800 p-6">
-            <h3 className="mb-3 text-lg font-semibold text-richblack-5">Enrolled Students</h3>
-            <div className="mb-3 flex -space-x-3">
-              {topStudents.map((student) => (
-                <img
-                  key={student._id}
-                  src={student.avatar || "https://placehold.co/80x80?text=U"}
-                  alt={student.firstName}
-                  className="h-10 w-10 rounded-full border-2 border-richblack-800 object-cover"
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowStudents((prev) => !prev)}
-              className="rounded bg-richblack-700 px-3 py-1.5 text-sm text-richblack-50"
-            >
-              {showStudents ? "Hide Students" : "View All Students"}
-            </button>
-            {showStudents ? (
-              <div className="mt-3 space-y-2">
-                {students.map((student) => (
-                  <div key={student._id} className="flex items-center gap-3 rounded-lg border border-richblack-700 bg-richblack-900 p-3">
-                    <img
-                      src={student.avatar || "https://placehold.co/80x80?text=U"}
-                      alt={student.firstName}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="text-sm text-richblack-50">
-                        {student.firstName} {student.lastName}
-                      </p>
-                      <p className="text-xs text-richblack-400">{student.email}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          </form>
         </div>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 };
 

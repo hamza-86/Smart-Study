@@ -10,6 +10,13 @@ const SubSection = require("../models/subSection");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 
+const normalizeSectionName = (name) =>
+  String(name || "")
+    .trim()
+    .toLowerCase();
+
+const isIntroductionSection = (name) => normalizeSectionName(name) === "introduction";
+
 // ─── createSection ───────────────────────────────────────────────────────────
 
 const createSection = async (courseId, instructorId, sectionData) => {
@@ -22,6 +29,9 @@ const createSection = async (courseId, instructorId, sectionData) => {
 
     if (!sectionName?.trim()) {
       throw APIError.validation("Section name is required");
+    }
+    if (isIntroductionSection(sectionName)) {
+      throw APIError.validation("Introduction section is auto-created and reserved");
     }
 
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
@@ -105,6 +115,9 @@ const updateSection = async (sectionId, instructorId, sectionData) => {
 
     const nextName = sectionData.sectionName || sectionData.title;
     if (nextName !== undefined) {
+      if (isIntroductionSection(section.sectionName) && !isIntroductionSection(nextName)) {
+        throw APIError.validation("Introduction section name cannot be changed");
+      }
       section.sectionName = nextName.trim();
     }
     if (sectionData.description !== undefined) {
@@ -157,6 +170,9 @@ const deleteSection = async (sectionId, courseId, instructorId) => {
     const section = await Section.findById(sectionId).session(session);
     if (!section) {
       throw APIError.notFound("Section");
+    }
+    if (isIntroductionSection(section.sectionName)) {
+      throw APIError.validation("Introduction section cannot be deleted");
     }
 
     // Delete all sub-sections inside this section

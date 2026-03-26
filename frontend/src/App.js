@@ -45,8 +45,8 @@ const Setting        = lazy(() => import("./pages/Setting"));
 const MyCourses      = lazy(() => import("./pages/instructor/MyCourses"));
 const AddCourse      = lazy(() => import("./pages/instructor/AddCourse"));
 const EditCourse     = lazy(() => import("./pages/instructor/EditCourse"));
-const CreateSection  = lazy(() => import("./pages/instructor/CreateSection"));
-const PublishCourse  = lazy(() => import("./pages/instructor/PublishCourse"));
+const CourseBuilder  = lazy(() => import("./pages/instructor/CourseBuilder"));
+const CourseReview   = lazy(() => import("./pages/instructor/CourseReview"));
 const InstructorCourseDetails = lazy(() => import("./pages/instructor/InstructorCourseDetails"));
 const InstructorStudents  = lazy(() => import("./pages/instructor/InstructorStudents"));
 const InstructorEarnings  = lazy(() => import("./pages/instructor/InstructorEarnings"));
@@ -105,8 +105,8 @@ function App() {
                 <Route path="/dashboard/add-course"     element={<AddCourse />} />
                 <Route path="/dashboard/course/:courseId" element={<InstructorCourseDetails />} />
                 <Route path="/dashboard/edit-course/:courseId" element={<EditCourse />} />
-                <Route path="/dashboard/add-section"    element={<CreateSection />} />
-                <Route path="/dashboard/publish-course" element={<PublishCourse />} />
+                <Route path="/dashboard/course-builder/:courseId" element={<CourseBuilder />} />
+                <Route path="/dashboard/course-review/:courseId" element={<CourseReview />} />
                 {/* Analytics */}
                 <Route path="/dashboard/students"       element={<InstructorStudents />} />
                 <Route path="/dashboard/earnings"       element={<InstructorEarnings />} />

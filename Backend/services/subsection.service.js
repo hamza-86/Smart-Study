@@ -11,6 +11,14 @@ const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
 
+const normalizeSectionName = (name) =>
+  String(name || "")
+    .trim()
+    .toLowerCase();
+
+const isIntroductionSection = (section) =>
+  normalizeSectionName(section?.sectionName) === "introduction";
+
 const resolveContent = async (type, mediaFile, notesFiles = [], data = {}) => {
   const rawType = String(type || "video").toLowerCase();
   const normalizedType = rawType === "note" ? "notes" : rawType;
@@ -89,6 +97,11 @@ const createSubSection = async (
 
     const section = await Section.findById(sectionId).session(session);
     if (!section) throw APIError.notFound("Section");
+
+    const normalizedType = String(type || "video").toLowerCase();
+    if (isIntroductionSection(section) && normalizedType !== "video") {
+      throw APIError.validation("Introduction section only supports video content");
+    }
 
     const course = await Course.findOne({
       _id: courseId,
@@ -184,6 +197,9 @@ const updateSubSection = async (
     }
     if (updateData.type !== undefined) {
       const nextType = String(updateData.type).toLowerCase();
+      if (isIntroductionSection(section) && nextType !== "video") {
+        throw APIError.validation("Introduction section only supports video content");
+      }
       subsection.type = nextType === "note" ? "notes" : nextType;
     }
     if (updateData.textContent !== undefined) subsection.textContent = updateData.textContent;

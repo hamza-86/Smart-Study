@@ -61,7 +61,7 @@ const InstructorSection = ({
 
   return (
     <>
-      <div className="flex flex-col">
+      {/* <div className="flex flex-col">
         <div className="overflow-hidden flex flex-col w-full border border-richblack-600 bg-richblack-700 text-richblack-5 rounded-lg mt-3">
           <div className="flex items-center h-[50px] justify-between px-4">
             <p className="text-sm font-medium truncate max-w-[60%]">{name}</p>
@@ -150,7 +150,7 @@ const InstructorSection = ({
         title="Delete Section?"
         message="This will permanently delete this section and all its lectures. This action cannot be undone."
         confirmLabel="Delete Section"
-      />
+      /> */}
     </>
   );
 };

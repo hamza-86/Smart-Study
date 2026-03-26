@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FiChevronDown, FiEdit2 } from "react-icons/fi";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useDispatch } from "react-redux";
@@ -10,7 +10,20 @@ import ConfirmDialogue from "../common/ConfirmDialogue";
 import { deleteSection, editSection } from "../../services/courseServices";
 import { updateSection } from "../../slices/courseSlice";
 
-const InstructorSection = ({ sectionId, name, subSections = [], courseId, token, onDelete }) => {
+const normalizeName = (value) => String(value || "").trim().toLowerCase();
+
+const InstructorSection = ({
+  sectionId,
+  name,
+  subSections = [],
+  courseId,
+  token,
+  onDelete,
+  index = 0,
+  onUploadStateChange,
+  forceOpen = false,
+  onExpandChange,
+}) => {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -18,6 +31,14 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [subTypeModal, setSubTypeModal] = useState(null);
+
+  const isIntroSection = useMemo(() => normalizeName(name) === "introduction", [name]);
+
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+    }
+  }, [forceOpen]);
 
   const saveSectionName = async () => {
     if (!sectionName.trim()) {
@@ -39,13 +60,27 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
     if (result) onDelete?.(sectionId);
   };
 
+  const actions = isIntroSection
+    ? [{ type: "video", label: "Add Intro Video" }]
+    : [
+        { type: "video", label: "Add Video" },
+        { type: "notes", label: "Add Notes" },
+        { type: "quiz", label: "Add Quiz" },
+      ];
+
   return (
     <>
       <div className="rounded-lg border border-richblack-700 bg-richblack-900">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <button
             type="button"
-            onClick={() => setOpen((prev) => !prev)}
+            onClick={() =>
+              setOpen((prev) => {
+                const next = !prev;
+                onExpandChange?.(next);
+                return next;
+              })
+            }
             className="flex items-center gap-2 text-left"
           >
             <FiChevronDown className={`text-richblack-300 transition ${open ? "rotate-0" : "-rotate-90"}`} />
@@ -56,17 +91,20 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
                 className="rounded border border-richblack-600 bg-richblack-800 px-2 py-1 text-sm text-richblack-50"
               />
             ) : (
-              <p className="text-sm font-medium text-richblack-50">{name}</p>
+              <div>
+                <p className="text-sm font-medium text-richblack-50">
+                  Section {index + 1}: {name}
+                </p>
+                {isIntroSection ? (
+                  <p className="text-xs text-yellow-50">Only video is allowed in this section.</p>
+                ) : null}
+              </div>
             )}
           </button>
           <div className="flex items-center gap-2">
             {editing ? (
               <>
-                <button
-                  type="button"
-                  onClick={saveSectionName}
-                  className="rounded bg-yellow-50 px-2.5 py-1 text-xs font-semibold text-richblack-900"
-                >
+                <button type="button" onClick={saveSectionName} className="rounded bg-yellow-50 px-2.5 py-1 text-xs font-semibold text-richblack-900">
                   Save
                 </button>
                 <button
@@ -82,20 +120,14 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
               </>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  className="rounded p-1.5 text-richblack-300 hover:bg-richblack-700"
-                >
+                <button type="button" onClick={() => setEditing(true)} className="rounded p-1.5 text-richblack-300 hover:bg-richblack-700">
                   <FiEdit2 size={14} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDelete(true)}
-                  className="rounded p-1.5 text-pink-300 hover:bg-richblack-700"
-                >
-                  <RiDeleteBin6Line size={14} />
-                </button>
+                {!isIntroSection ? (
+                  <button type="button" onClick={() => setShowDelete(true)} className="rounded p-1.5 text-pink-300 hover:bg-richblack-700">
+                    <RiDeleteBin6Line size={14} />
+                  </button>
+                ) : null}
               </>
             )}
           </div>
@@ -104,12 +136,7 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
         {open ? (
           <div className="border-t border-richblack-700 px-3 py-3">
             <div className="mb-3 flex flex-wrap gap-2">
-                {[
-                  { type: "video", label: "Add Video" },
-                  { type: "image", label: "Add Image" },
-                  { type: "notes", label: "Add Notes" },
-                  { type: "quiz", label: "Add Quiz" },
-                ].map((item) => (
+              {actions.map((item) => (
                 <button
                   key={item.type}
                   type="button"
@@ -122,19 +149,16 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
             </div>
 
             <div className="space-y-1 rounded-md border border-richblack-700 bg-richblack-800">
-              {(subSections || []).length > 0 ? (
-                subSections.map((sub) => (
-                  <InstructorSubsection
-                    key={sub._id}
-                    subSection={sub}
-                    sectionId={sectionId}
-                    courseId={courseId}
-                    token={token}
-                  />
-                ))
-              ) : (
-                <p className="px-4 py-3 text-xs text-richblack-400">No subsections yet.</p>
-              )}
+              {(subSections || []).map((sub) => (
+                <InstructorSubsection
+                  key={sub._id}
+                  subSection={sub}
+                  sectionId={sectionId}
+                  courseId={courseId}
+                  token={token}
+                  onUploadStateChange={onUploadStateChange}
+                />
+              ))}
             </div>
           </div>
         ) : null}
@@ -146,6 +170,7 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
         sectionId={sectionId}
         courseId={courseId}
         subsectionType={subTypeModal || "video"}
+        onUploadStateChange={onUploadStateChange}
       />
 
       <ConfirmDialogue
@@ -154,7 +179,7 @@ const InstructorSection = ({ sectionId, name, subSections = [], courseId, token,
         onConfirm={removeSection}
         loading={deleting}
         title="Delete Section?"
-        message="This will remove the section and all its subsections."
+        message="This will remove the section and all its content."
         confirmLabel="Delete Section"
       />
     </>

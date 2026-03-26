@@ -50,6 +50,31 @@ const resolveCategoryId = async (categoryInput, session) => {
   return bySlug?._id || null;
 };
 
+const mapSectionPayload = (courseDoc) => {
+  const sections = (courseDoc?.courseContent || []).map((section) => ({
+    _id: section._id,
+    title: section.sectionName,
+    sectionName: section.sectionName,
+    subsections: (section.subSections || []).map((sub) => ({
+      _id: sub._id,
+      title: sub.title,
+      type: sub.type,
+      data: {
+        description: sub.description || "",
+        duration: sub.timeDuration || 0,
+        textContent: sub.textContent || "",
+        contentUrl: sub.contentUrl || null,
+        videoUrl: sub.videoUrl || null,
+        quizzes: sub.quizzes || [],
+      },
+      ...sub,
+    })),
+    subSections: section.subSections || [],
+  }));
+
+  return sections;
+};
+
 // ─── createCourse ────────────────────────────────────────────────────────────
 
 const createCourse = async (instructorId, courseData, thumbnail) => {
@@ -126,6 +151,28 @@ const createCourse = async (instructorId, courseData, thumbnail) => {
           status: COURSE_STATUS.DRAFT,
         },
       ],
+      { session }
+    );
+
+    // Create a mandatory first section for course overview.
+    const introSection = await Section.create(
+      [
+        {
+          sectionName: "Introduction",
+          description: "Course overview and onboarding video",
+          order: 0,
+          subSections: [],
+        },
+      ],
+      { session }
+    );
+
+    await Course.findByIdAndUpdate(
+      newCourse[0]._id,
+      {
+        $push: { courseContent: introSection[0]._id },
+        $inc: { totalSections: 1 },
+      },
       { session }
     );
 
@@ -304,11 +351,18 @@ const getCourseDetails = async (courseId, requestingUserId = null) => {
     }));
   }
 
-  course.sections = (course.courseContent || []).map((section) => ({
-    ...section,
-    title: section.sectionName,
-    subsections: section.subSections || [],
-  }));
+  const sections = mapSectionPayload(course);
+  course.sections = sections;
+  course.course = {
+    _id: course._id,
+    title: course.title,
+    subtitle: course.subtitle,
+    description: course.description,
+    thumbnail: course.thumbnail,
+    price: course.price,
+    discountedPrice: course.discountedPrice,
+    status: course.status,
+  };
 
   return { success: true, data: course, isEnrolled };
 };
@@ -348,11 +402,18 @@ const getCourseContent = async (courseId, userId) => {
     throw APIError.notFound("Course");
   }
 
-  course.sections = (course.courseContent || []).map((section) => ({
-    ...section,
-    title: section.sectionName,
-    subsections: section.subSections || [],
-  }));
+  const sections = mapSectionPayload(course);
+  course.sections = sections;
+  course.course = {
+    _id: course._id,
+    title: course.title,
+    subtitle: course.subtitle,
+    description: course.description,
+    thumbnail: course.thumbnail,
+    price: course.price,
+    discountedPrice: course.discountedPrice,
+    status: course.status,
+  };
 
   return { success: true, data: course };
 };
@@ -429,6 +490,17 @@ const getInstructorCourseDetails = async (courseId, instructorId) => {
     success: true,
     data: {
       ...course,
+      sections: mapSectionPayload(course),
+      course: {
+        _id: course._id,
+        title: course.title,
+        subtitle: course.subtitle,
+        description: course.description,
+        thumbnail: course.thumbnail,
+        price: course.price,
+        discountedPrice: course.discountedPrice,
+        status: course.status,
+      },
       totalStudents: enrollments.length,
       totalEarnings: earningsAgg[0]?.totalEarnings || 0,
       enrolledStudents: enrollments.map((en) => ({
@@ -559,7 +631,12 @@ const publishCourse = async (courseId, instructorId) => {
   session.startTransaction();
 
   try {
-    const course = await Course.findById(courseId).session(session);
+    const course = await Course.findById(courseId)
+      .populate({
+        path: "courseContent",
+        populate: { path: "subSections", select: "type videoUrl" },
+      })
+      .session(session);
     if (!course) {
       throw APIError.notFound("Course");
     }
@@ -578,6 +655,20 @@ const publishCourse = async (courseId, instructorId) => {
           "Course must have at least one section before publishing"
         );
       }
+
+      const introductionSection = (course.courseContent || []).find(
+        (section) => String(section.sectionName || "").trim().toLowerCase() === "introduction"
+      );
+      if (!introductionSection) {
+        throw APIError.validation("Introduction section is required");
+      }
+      const introVideo = (introductionSection.subSections || []).find(
+        (sub) => String(sub.type || "").toLowerCase() === "video" && Boolean(sub.videoUrl)
+      );
+      if (!introVideo) {
+        throw APIError.validation("Upload an introduction video before publishing");
+      }
+
       course.status      = COURSE_STATUS.PUBLISHED;
       course.publishedAt = course.publishedAt || new Date();
     } else {

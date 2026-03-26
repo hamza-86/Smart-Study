@@ -109,7 +109,7 @@ export const fetchEnrolledCourse = async (courseId, token, dispatch) => {
   if (dispatch) dispatch(setLoading(true));
   const toastId = toast.loading("Loading...");
   try {
-    const response = await axiosInstance.get(GET_INSTRUCTOR_COURSE_DETAILS(courseId));
+    const response = await axiosInstance.get(GET_COURSE_CONTENT(courseId));
     return {
       status: 200,
       data: { data: { courseDetails: response.data.data } },
@@ -293,15 +293,21 @@ export const deleteSection = async (sectionId, courseId, token) => {
    SUBSECTIONS (Lectures)
 ════════════════════════════════════════════════════ */
 
-export const addSubsection = async (formData, token) => {
+export const addSubsection = async (formData, token, options = {}) => {
+  const { onUploadProgress, showSuccessToast = false } = options;
   const toastId = toast.loading("Uploading lecture...");
   try {
     const response = await axiosInstance.post(
       CREATE_SUBSECTION_V2_API,
       formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress,
+      }
     );
-    toast.success("Lecture added successfully");
+    if (showSuccessToast) {
+      toast.success("Lecture added successfully");
+    }
     return response.data.data;
   } catch (error) {
     toast.error(error.response?.data?.message || "Failed to add lecture");
@@ -311,15 +317,21 @@ export const addSubsection = async (formData, token) => {
   }
 };
 
-export const editSubsection = async (subSectionId, formData, token) => {
+export const editSubsection = async (subSectionId, formData, token, options = {}) => {
+  const { onUploadProgress, showSuccessToast = false } = options;
   const toastId = toast.loading("Updating lecture...");
   try {
     const response = await axiosInstance.put(
       UPDATE_SUBSECTION_V2_API(subSectionId),
       formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress,
+      }
     );
-    toast.success("Lecture updated successfully");
+    if (showSuccessToast) {
+      toast.success("Lecture updated successfully");
+    }
     return response.data.data;
   } catch (error) {
     toast.error(error.response?.data?.message || "Failed to update lecture");

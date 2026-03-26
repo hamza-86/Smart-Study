@@ -29,12 +29,16 @@ const sectionRoutes = require("./routes/section.routes");
 const subsectionRoutes = require("./routes/subsection.routes");
 
 const app = express();
+const clientURL =
+  process.env.CLIENT_URL ||
+  process.env.FRONTEND_URL ||
+  "http://localhost:3000";
 
 app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: clientURL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -93,8 +97,6 @@ app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
     message: "Service healthy",
-    data: { dbState: mongoose.connection.readyState },
-    error: null,
   });
 });
 
@@ -116,19 +118,51 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
 let server;
+let dbReconnectTimer;
+const DB_RECONNECT_INTERVAL_MS = Number(process.env.DB_RECONNECT_INTERVAL_MS || 30000);
+
+// const ensureDbConnection = async () => {
+//   if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+//     return true;
+//   }
+
+//   try {
+//     await dbConnect();
+//     return true;
+//   } catch (error) {
+//     logger.error("Database connection unavailable. Retrying in background.", error);
+//     return false;
+//   }
+// };
 
 const startServer = async () => {
-  await dbConnect();
-  cloudinaryConnect();
+  try {
+    await dbConnect(); // ✅ VERY IMPORTANT (blocking)
 
-  server = app.listen(PORT, () => {
-    logger.info("Server started", {
-      port: PORT,
-      environment: process.env.NODE_ENV || "development",
-      url: `http://localhost:${PORT}`,
+    cloudinaryConnect();
+
+    server = app.listen(PORT, "0.0.0.0", () => {
+      logger.info("Server started", {
+        port: PORT,
+        environment: process.env.NODE_ENV || "development",
+      });
     });
-  });
+
+  } catch (error) {
+    logger.error("Failed to start server", error);
+    process.exit(1); // ✅ crash if DB fail (correct behavior)
+  }
 };
+  // await ensureDbConnection();
+
+//   dbReconnectTimer = setInterval(() => {
+//     ensureDbConnection();
+//   }, DB_RECONNECT_INTERVAL_MS);
+
+//   if (typeof dbReconnectTimer.unref === "function") {
+//     dbReconnectTimer.unref();
+//   }
+// };
 
 const gracefulShutdown = (signal) => {
   logger.info(`${signal} received. Shutting down gracefully.`);
@@ -139,6 +173,7 @@ const gracefulShutdown = (signal) => {
 
   server.close(() => {
     logger.info("HTTP server closed");
+
     mongoose.connection.close(false, () => {
       logger.info("MongoDB connection closed");
       process.exit(0);
@@ -150,7 +185,6 @@ const gracefulShutdown = (signal) => {
     process.exit(1);
   }, 10000);
 };
-
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 

@@ -17,6 +17,7 @@ const Coupon = require("../models/Coupon.js");
 const mailSender = require("../utils/mailSender");
 const APIError = require("../utils/apiError");
 const logger = require("../utils/logger");
+const razorpaySecret = process.env.RAZORPAY_SECRET || process.env.RAZORPAY_SECRET_KEY;
 
 // ─── Shared: complete enrollment for one course ──────────────────────────────
 
@@ -228,7 +229,7 @@ const createPaymentOrder = async (userId, courseIds, couponCode = null) => {
 // ─── verifyPayment ───────────────────────────────────────────────────────────
 
 const verifyPayment = async (paymentData) => {
-  if (!hasRazorpayConfig || !process.env.RAZORPAY_SECRET) {
+  if (!hasRazorpayConfig || !razorpaySecret) {
     throw APIError.externalAPI("Payment gateway is not configured on server");
   }
 
@@ -247,7 +248,7 @@ const verifyPayment = async (paymentData) => {
     // Verify Razorpay signature
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .createHmac("sha256", razorpaySecret)
       .update(body)
       .digest("hex");
 

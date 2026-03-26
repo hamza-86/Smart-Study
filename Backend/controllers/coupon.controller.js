@@ -8,7 +8,7 @@ const {
   validateCoupon,
   getAllCoupons,
   deleteCoupon,
-} = require("../services/Coupon.service");
+} = require("../services/coupon.service");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const APIResponse = require("../utils/apiResponse");
 const { HTTP_STATUS } = require("../constants");

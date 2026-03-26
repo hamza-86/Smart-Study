@@ -8,7 +8,7 @@ const {
   getNotifications,
   markNotificationsRead,
   getCertificates,
-} = require("../services/Student.service");
+} = require("../services/student.service");
 const { asyncHandler } = require("../middlewares/errorHandler");
 const APIResponse = require("../utils/apiResponse");
 const { HTTP_STATUS } = require("../constants");

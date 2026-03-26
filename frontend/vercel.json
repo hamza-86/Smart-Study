@@ -1,5 +1,5 @@
 {
-  "buildCommand": "REACT_APP_BASE_URL=$NEXT_PUBLIC_API_URL npm run build",
+  "buildCommand": "if [ -z \"$NEXT_PUBLIC_API_URL\" ]; then echo \"NEXT_PUBLIC_API_URL is required\" && exit 1; fi; REACT_APP_BASE_URL=$NEXT_PUBLIC_API_URL npm run build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]

@@ -11,7 +11,11 @@ export const API_BASE_URL =
       "";
 
     const normalized = rawBaseUrl.trim().replace(/\/+$/, "");
-    if (!normalized) return "";
+    if (!normalized) {
+      throw new Error(
+        "API base URL is missing. Set NEXT_PUBLIC_API_URL in Vercel environment settings."
+      );
+    }
 
     return normalized.endsWith("/api/v1")
       ? normalized

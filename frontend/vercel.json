@@ -1,4 +1,5 @@
 {
+  "buildCommand": "REACT_APP_BASE_URL=$NEXT_PUBLIC_API_URL npm run build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]

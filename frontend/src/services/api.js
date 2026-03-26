@@ -9,8 +9,9 @@
  *   etc.
  */
 
-const BASE_URL =
-  process.env.REACT_APP_BASE_URL || "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../constants";
+
+const BASE_URL = API_BASE_URL;
 
 export const endpoints = {
 

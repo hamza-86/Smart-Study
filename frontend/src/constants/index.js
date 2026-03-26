@@ -4,7 +4,19 @@
  */
 
 export const API_BASE_URL =
-  process.env.REACT_APP_BASE_URL || "http://localhost:4000/api/v1";
+  (() => {
+    const rawBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.REACT_APP_BASE_URL ||
+      "";
+
+    const normalized = rawBaseUrl.trim().replace(/\/+$/, "");
+    if (!normalized) return "";
+
+    return normalized.endsWith("/api/v1")
+      ? normalized
+      : `${normalized}/api/v1`;
+  })();
 
 // ── Account Types ─────────────────────────────────────────────────────────────
 export const ACCOUNT_TYPES = {

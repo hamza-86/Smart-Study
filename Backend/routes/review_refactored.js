@@ -7,7 +7,7 @@ const {
   updateReview,
   deleteReview,
   replyToReview,
-} = require("../controllers/review.controller");
+} = require("../controllers/review_refactored");
 
 const { auth, isStudent, isInstructor } = require("../middlewares/auth");
 

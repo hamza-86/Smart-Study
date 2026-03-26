@@ -6,7 +6,7 @@ const {
   verifyPayment,
   getEnrolledCourses,
   enrollFree,
-} = require("../controllers/payment.controller");
+} = require("../controllers/payments_refactored");
 
 const { auth, isStudent } = require("../middlewares/auth");
 

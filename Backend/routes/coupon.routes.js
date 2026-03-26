@@ -6,7 +6,7 @@ const {
   validateCoupon,
   getAllCoupons,
   deleteCoupon,
-} = require("../controllers/Coupon.controller");
+} = require("../controllers/coupon.controller");
 
 const { auth, isAdmin, isStudent } = require("../middlewares/auth");
 

@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { login, signup, sendotp, logout, refreshToken, forgotPassword, resetPassword } = require("../controllers/auth");
+const { login, signup, sendotp, logout, refreshToken, forgotPassword, resetPassword } = require("../controllers/auth.controller");
 const {
   getProfile,
   updateProfile,
   changePassword,
   uploadAvatar,
-} = require("../controllers/profile");
+} = require("../controllers/profile.controller");
 const { auth, isStudent, isInstructor } = require("../middlewares/auth");
 
 // ================= AUTH ROUTES =================

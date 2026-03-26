@@ -15,7 +15,7 @@ const {
   updateSubSection,
   deleteSubSection,
   publishCourse,
-} = require("../controllers/course");
+} = require("../controllers/course.controller");
 
 const { auth, isInstructor, isStudent } = require("../middlewares/auth");
 

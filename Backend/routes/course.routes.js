@@ -34,7 +34,7 @@ const {
   submitQuizAttempt,
   getMyAttempts,
   getAllAttempts,
-} = require("../controllers/quiz.controller");
+} = require("../controllers/quiz.service.js");
 
 const {
   createAssignment,

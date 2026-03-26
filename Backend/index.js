@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+// require("dotenv").config({ path: path.join(__dirname, ".env") });
+require("dotenv").config();
 
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -38,7 +39,8 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: clientURL,
+    // origin: clientURL,
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -94,13 +96,14 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
+   console.log("Health route hit ✅");
   res.status(200).json({
     success: true,
     message: "Service healthy",
   });
 });
 
-app.use("/api/v1", requireDbConnection);
+// app.use("/api/v1", requireDbConnection);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/payments", paymentRoutes);
@@ -116,7 +119,7 @@ app.use("/api/v1/subsections", subsectionRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 let server;
 let dbReconnectTimer;
 const DB_RECONNECT_INTERVAL_MS = Number(process.env.DB_RECONNECT_INTERVAL_MS || 30000);

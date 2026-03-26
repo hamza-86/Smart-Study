@@ -119,7 +119,8 @@ app.use("/api/v1/subsections", subsectionRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 let server;
 let dbReconnectTimer;
 const DB_RECONNECT_INTERVAL_MS = Number(process.env.DB_RECONNECT_INTERVAL_MS || 30000);
@@ -177,10 +178,15 @@ const gracefulShutdown = (signal) => {
   server.close(() => {
     logger.info("HTTP server closed");
 
-    mongoose.connection.close(false, () => {
-      logger.info("MongoDB connection closed");
-      process.exit(0);
-    });
+  mongoose.connection.close(false)
+  .then(() => {
+    logger.info("MongoDB connection closed");
+    process.exit(0);
+  })
+  .catch((err) => {
+    logger.error("Error closing MongoDB connection", err);
+    process.exit(1);
+  });
   });
 
   setTimeout(() => {

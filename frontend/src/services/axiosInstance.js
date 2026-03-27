@@ -57,12 +57,12 @@ axiosInstance.interceptors.response.use(
     const requestUrl = String(originalRequest?.url || "");
 
     const isAuthEndpoint =
-      requestUrl.includes("/auth/login") ||
-      requestUrl.includes("/auth/signup") ||
-      requestUrl.includes("/auth/sendotp") ||
-      requestUrl.includes("/auth/forgot-password") ||
-      requestUrl.includes("/auth/reset-password") ||
-      requestUrl.includes("/auth/refresh-token");
+      requestUrl.includes("/api/v1/auth/login") ||
+      requestUrl.includes("/api/v1/auth/signup") ||
+      requestUrl.includes("/api/v1/auth/sendotp") ||
+      requestUrl.includes("/api/v1/auth/forgot-password") ||
+      requestUrl.includes("/api/v1/auth/reset-password") ||
+      requestUrl.includes("/api/v1/auth/refresh-token");
 
     // If 401 and not already retrying
     if (
@@ -88,7 +88,7 @@ axiosInstance.interceptors.response.use(
       try {
         // Try to get a new access token using the refresh token cookie
         const response = await axios.post(
-          `${BASE_URL}/auth/refresh-token`,
+          `${BASE_URL}/api/v1/auth/refresh-token`,
           {},
           { withCredentials: true }
         );

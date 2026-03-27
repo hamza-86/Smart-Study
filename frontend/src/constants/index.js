@@ -4,23 +4,9 @@
  */
 
 export const API_BASE_URL =
-  (() => {
-    const rawBaseUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.REACT_APP_BASE_URL ||
-      "";
-
-    const normalized = rawBaseUrl.trim().replace(/\/+$/, "");
-    if (!normalized) {
-      throw new Error(
-        "API base URL is missing. Set NEXT_PUBLIC_API_URL (Vercel) or REACT_APP_BASE_URL (CRA)."
-      );
-    }
-
-    return normalized.endsWith("/api/v1")
-      ? normalized
-      : `${normalized}/api/v1`;
-  })();
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_BASE_URL ||
+  "https://smart-study-iudo.onrender.com";
 
 // ── Account Types ─────────────────────────────────────────────────────────────
 export const ACCOUNT_TYPES = {
